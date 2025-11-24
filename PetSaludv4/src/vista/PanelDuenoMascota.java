@@ -436,13 +436,26 @@ public class PanelDuenoMascota extends JPanel {
     }
     
     private void cargarTodasMascotas() {
-        // Cargar todas las mascotas sin filtro
+        List<Mascota> mascotas = controlador.listarTodasMascotas();
         modeloMascotas.setRowCount(0);
-        sorterMascotas.setRowFilter(null);
-        
-        // Aquí necesitarías un método en el controlador que liste todas las mascotas
-        // Por ahora, mostramos mensaje
-        //mostrarMensajeInfo("Ingrese un ID de dueño para buscar sus mascotas");
+
+        if (mascotas != null && !mascotas.isEmpty()) {
+            for (Mascota m : mascotas) {
+                modeloMascotas.addRow(new Object[]{
+                    m.getIdMascota(),
+                    m.getNombre(),
+                    m.getEspecie(),
+                    m.getRaza(),
+                    m.getEdad(),
+                    m.getSexo(),
+                    m.getPeso(),
+                    m.getIdDueno()
+                });
+            }
+            System.out.println("Cargadas " + mascotas.size() + " mascotas");
+        } else {
+            mostrarMensajeInfo("No hay mascotas registradas en el sistema");
+        }
     }
     
     private void filtrarMascotasPorDueno(String idDuenoTexto) {

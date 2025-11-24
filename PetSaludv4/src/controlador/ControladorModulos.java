@@ -74,6 +74,16 @@ public class ControladorModulos {
         }
     }
     
+    // NUEVO MÉTODO: Listar todas las mascotas
+    public List<Mascota> listarTodasMascotas() {
+        try {
+            return servicioVet.listarTodasMascotas();
+        } catch (SQLException e) {
+            System.err.println("Error al listar mascotas: " + e.getMessage());
+            return null;
+        }
+    }
+    
     // --- ORDENES ---
     public OrdenVeterinaria crearOrden(int idMascota, int idVeterinario, 
                                        TipoExamen tipoExamen, String observaciones) {

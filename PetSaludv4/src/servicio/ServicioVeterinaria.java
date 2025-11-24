@@ -62,6 +62,11 @@ public class ServicioVeterinaria {
         return mascotaDAO.buscarPorNombre(nombre);
     }
     
+    // NUEVO MÉTODO: Listar todas las mascotas
+    public List<Mascota> listarTodasMascotas() throws SQLException {
+        return mascotaDAO.listarTodos();
+    }
+    
     // --- ORDENES ---
     public OrdenVeterinaria crearOrden(int idMascota, int idVeterinario, 
                                        TipoExamen tipoExamen, String observaciones) {
