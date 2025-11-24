@@ -6,9 +6,11 @@ import modelo.Enumeraciones.RolUsuario;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Comparator;
 
 public class PanelUsuarios extends JPanel {
     private static final Color COLOR_PRIMARY = new Color(52, 168, 83);
@@ -22,6 +24,7 @@ public class PanelUsuarios extends JPanel {
     private UsuarioDAO usuarioDAO;
     private DefaultTableModel modeloTabla;
     private JTable tabla;
+    private TableRowSorter<DefaultTableModel> sorter;
     
     public PanelUsuarios() {
         this.usuarioDAO = new UsuarioDAO();
@@ -35,7 +38,7 @@ public class PanelUsuarios extends JPanel {
         JButton btnNuevo = crearBoton("\u2795 Nuevo Usuario", COLOR_PRIMARY);
         JButton btnActualizar = crearBoton("\uD83D\uDD04 Actualizar", COLOR_SECONDARY);
         JButton btnEditar = crearBoton("\u270F Editar", new Color(255, 152, 0));
-        JButton btnEliminar = crearBoton("\uD83D\uDDD1 Desactivar", COLOR_DANGER);
+        JButton btnEliminar = crearBoton("\uD83D\uDDD1 Eliminar", COLOR_DANGER);
         
         panelSuperior.add(btnNuevo);
         panelSuperior.add(btnActualizar);
@@ -49,6 +52,12 @@ public class PanelUsuarios extends JPanel {
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
+            
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 0) return Integer.class;
+                return String.class;
+            }
         };
         
         tabla = new JTable(modeloTabla);
@@ -58,6 +67,13 @@ public class PanelUsuarios extends JPanel {
         tabla.getTableHeader().setBackground(COLOR_PRIMARY);
         tabla.getTableHeader().setForeground(Color.WHITE);
         tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        
+        // Configurar ordenamiento automático
+        sorter = new TableRowSorter<>(modeloTabla);
+        tabla.setRowSorter(sorter);
+        
+        // Ordenar por ID ascendente por defecto
+        sorter.setSortKeys(java.util.Arrays.asList(new RowSorter.SortKey(0, SortOrder.ASCENDING)));
         
         JScrollPane scrollPane = new JScrollPane(tabla);
         scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1, true));
@@ -75,7 +91,7 @@ public class PanelUsuarios extends JPanel {
         btnNuevo.addActionListener(e -> mostrarDialogoNuevoUsuario());
         btnActualizar.addActionListener(e -> cargarUsuarios());
         btnEditar.addActionListener(e -> editarUsuarioSeleccionado());
-        btnEliminar.addActionListener(e -> desactivarUsuarioSeleccionado());
+        btnEliminar.addActionListener(e -> eliminarUsuarioSeleccionado());
         
         // Cargar datos iniciales
         cargarUsuarios();
@@ -91,12 +107,10 @@ public class PanelUsuarios extends JPanel {
                     usuario.getIdUsuario(),
                     usuario.getNombreUsuario(),
                     usuario.getRol().getDescripcion(),
-                    usuario.isActivo() ? "\u2713" : "\u2717",
+                    usuario.isActivo() ? "\u2713 Activo" : "\u2717 Inactivo",
                     usuario.getFechaCreacion()
                 });
             }
-            
-            //mostrarMensajeExito("Usuarios cargados: " + usuarios.size());
         } catch (SQLException e) {
             mostrarMensajeError("Error al cargar usuarios: " + e.getMessage());
         }
@@ -217,8 +231,9 @@ public class PanelUsuarios extends JPanel {
             return;
         }
         
-        int idUsuario = (int) modeloTabla.getValueAt(filaSeleccionada, 0);
-        String nombreUsuario = (String) modeloTabla.getValueAt(filaSeleccionada, 1);
+        int filaModelo = tabla.convertRowIndexToModel(filaSeleccionada);
+        int idUsuario = (int) modeloTabla.getValueAt(filaModelo, 0);
+        String nombreUsuario = (String) modeloTabla.getValueAt(filaModelo, 1);
         
         JDialog dialogo = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), 
             "Editar Usuario", true);
@@ -318,20 +333,23 @@ public class PanelUsuarios extends JPanel {
         dialogo.setVisible(true);
     }
     
-    private void desactivarUsuarioSeleccionado() {
+    private void eliminarUsuarioSeleccionado() {
         int filaSeleccionada = tabla.getSelectedRow();
         if (filaSeleccionada < 0) {
-            mostrarMensajeInfo("Seleccione un usuario para desactivar");
+            mostrarMensajeInfo("Seleccione un usuario para eliminar");
             return;
         }
         
-        int idUsuario = (int) modeloTabla.getValueAt(filaSeleccionada, 0);
-        String nombreUsuario = (String) modeloTabla.getValueAt(filaSeleccionada, 1);
+        int filaModelo = tabla.convertRowIndexToModel(filaSeleccionada);
+        int idUsuario = (int) modeloTabla.getValueAt(filaModelo, 0);
+        String nombreUsuario = (String) modeloTabla.getValueAt(filaModelo, 1);
         
         int confirm = JOptionPane.showConfirmDialog(this,
-            "¿Desea desactivar el usuario '" + nombreUsuario + "'?",
-            "Confirmar",
-            JOptionPane.YES_NO_OPTION);
+            "¿Está seguro de eliminar el usuario '" + nombreUsuario + "'?\n" +
+            "Esta acción desactivará permanentemente el usuario.",
+            "Confirmar Eliminación",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
         
         if (confirm == JOptionPane.YES_OPTION) {
             try {
@@ -343,7 +361,7 @@ public class PanelUsuarios extends JPanel {
                 usuario.setActivo(false);
                 
                 usuarioDAO.actualizar(usuario);
-                mostrarMensajeExito("Usuario desactivado");
+                mostrarMensajeExito("Usuario eliminado/desactivado correctamente");
                 cargarUsuarios();
             } catch (SQLException ex) {
                 mostrarMensajeError("Error: " + ex.getMessage());
@@ -406,16 +424,5 @@ public class PanelUsuarios extends JPanel {
     
     private void mostrarMensajeInfo(String mensaje) {
         JOptionPane.showMessageDialog(this, mensaje, "Información", JOptionPane.INFORMATION_MESSAGE);
-    }
-    
-    // Main para testing
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Test Panel Usuarios");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-            frame.add(new PanelUsuarios());
-            frame.setVisible(true);
-        });
     }
 }

@@ -1,7 +1,8 @@
-%PDF-1.4
-Titulo: Reporte de Ordenes - PetSalud
------------------------------
-REPORTE DE ÓRDENES VETERINARIAS
+<?xml version="1.0"?>
+<Workbook>
+  <Worksheet ss:Name="Reporte de Ordenes - PetSalud">
+    <Table>
+      <Row><Cell><Data>REPORTE DE ÓRDENES VETERINARIAS
 Período: 24/10/2025 - 24/11/2025
 Total de órdenes: 1
 
@@ -11,7 +12,7 @@ DETALLE DE ÓRDENES:
 ID Orden: 1
 Fecha: 24/11/2025 11:15
 Tipo de Examen: SANGRE
-Estado: PENDIENTE
+Estado: EN_PROCESO
 Mascota: N/A (Perro)
 Dueño: Alexander Huamani
 Teléfono: N/A
@@ -21,6 +22,8 @@ Estado Resultado: N/A
 
 ───────────────────────────────────────────────────────────────────────────────
 
-
------------------------------
-[Formato PDF generado]
+</Data></Cell></Row>
+    </Table>
+  </Worksheet>
+</Workbook>
+[Formato Excel generado]

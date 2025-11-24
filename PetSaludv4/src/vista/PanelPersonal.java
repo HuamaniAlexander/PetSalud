@@ -7,6 +7,7 @@ import modelo.entidades.TecnicoVeterinario;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.sql.SQLException;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.List;
 public class PanelPersonal extends JPanel {
     private static final Color COLOR_PRIMARY = new Color(52, 168, 83);
     private static final Color COLOR_SECONDARY = new Color(66, 133, 244);
+    private static final Color COLOR_DANGER = new Color(244, 67, 54);
     private static final Color COLOR_CARD = new Color(255, 255, 255);
     private static final Color COLOR_BACKGROUND = new Color(248, 249, 250);
     private static final Color COLOR_BORDER = new Color(224, 224, 224);
@@ -25,6 +27,8 @@ public class PanelPersonal extends JPanel {
     private DefaultTableModel modeloTecnicos;
     private JTable tablaVeterinarios;
     private JTable tablaTecnicos;
+    private TableRowSorter<DefaultTableModel> sorterVeterinarios;
+    private TableRowSorter<DefaultTableModel> sorterTecnicos;
     
     public PanelPersonal() {
         this.veterinarioDAO = new VeterinarioDAO();
@@ -54,14 +58,17 @@ public class PanelPersonal extends JPanel {
         JButton btnNuevo = crearBoton("\u2795 Nuevo Veterinario", COLOR_PRIMARY);
         JButton btnActualizar = crearBoton("\uD83D\uDD04 Actualizar", COLOR_SECONDARY);
         JButton btnEditar = crearBoton("\u270F Editar", new Color(255, 152, 0));
+        JButton btnEliminar = crearBoton("\uD83D\uDDD1 Eliminar", COLOR_DANGER);
         
         btnNuevo.addActionListener(e -> mostrarDialogoNuevoVeterinario());
         btnActualizar.addActionListener(e -> cargarVeterinarios());
         btnEditar.addActionListener(e -> editarVeterinarioSeleccionado());
+        btnEliminar.addActionListener(e -> eliminarVeterinarioSeleccionado());
         
         panelBotones.add(btnNuevo);
         panelBotones.add(btnActualizar);
         panelBotones.add(btnEditar);
+        panelBotones.add(btnEliminar);
         
         // Tabla
         String[] columnas = {"ID", "Nombres", "Apellidos", "Especialidad", "Teléfono", "Email", "Colegiatura"};
@@ -69,6 +76,12 @@ public class PanelPersonal extends JPanel {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
+            }
+            
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 0) return Integer.class;
+                return String.class;
             }
         };
         
@@ -79,13 +92,17 @@ public class PanelPersonal extends JPanel {
         tablaVeterinarios.getTableHeader().setBackground(COLOR_PRIMARY);
         tablaVeterinarios.getTableHeader().setForeground(Color.WHITE);
         
+        // Configurar ordenamiento
+        sorterVeterinarios = new TableRowSorter<>(modeloVeterinarios);
+        tablaVeterinarios.setRowSorter(sorterVeterinarios);
+        sorterVeterinarios.setSortKeys(java.util.Arrays.asList(new RowSorter.SortKey(0, SortOrder.ASCENDING)));
+        
         JScrollPane scrollPane = new JScrollPane(tablaVeterinarios);
         scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1, true));
         
         panel.add(panelBotones, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
         
-        // Cargar datos iniciales
         cargarVeterinarios();
         
         return panel;
@@ -103,14 +120,17 @@ public class PanelPersonal extends JPanel {
         JButton btnNuevo = crearBoton("\u2795 Nuevo Técnico", COLOR_SECONDARY);
         JButton btnActualizar = crearBoton("\uD83D\uDD04 Actualizar", COLOR_PRIMARY);
         JButton btnEditar = crearBoton("\u270F Editar", new Color(255, 152, 0));
+        JButton btnEliminar = crearBoton("\uD83D\uDDD1 Eliminar", COLOR_DANGER);
         
         btnNuevo.addActionListener(e -> mostrarDialogoNuevoTecnico());
         btnActualizar.addActionListener(e -> cargarTecnicos());
         btnEditar.addActionListener(e -> editarTecnicoSeleccionado());
+        btnEliminar.addActionListener(e -> eliminarTecnicoSeleccionado());
         
         panelBotones.add(btnNuevo);
         panelBotones.add(btnActualizar);
         panelBotones.add(btnEditar);
+        panelBotones.add(btnEliminar);
         
         // Tabla
         String[] columnas = {"ID", "Nombres", "Apellidos", "Especialidad", "Teléfono"};
@@ -118,6 +138,12 @@ public class PanelPersonal extends JPanel {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
+            }
+            
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 0) return Integer.class;
+                return String.class;
             }
         };
         
@@ -128,13 +154,17 @@ public class PanelPersonal extends JPanel {
         tablaTecnicos.getTableHeader().setBackground(COLOR_SECONDARY);
         tablaTecnicos.getTableHeader().setForeground(Color.WHITE);
         
+        // Configurar ordenamiento
+        sorterTecnicos = new TableRowSorter<>(modeloTecnicos);
+        tablaTecnicos.setRowSorter(sorterTecnicos);
+        sorterTecnicos.setSortKeys(java.util.Arrays.asList(new RowSorter.SortKey(0, SortOrder.ASCENDING)));
+        
         JScrollPane scrollPane = new JScrollPane(tablaTecnicos);
         scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1, true));
         
         panel.add(panelBotones, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
         
-        // Cargar datos iniciales
         cargarTecnicos();
         
         return panel;
@@ -352,8 +382,6 @@ public class PanelPersonal extends JPanel {
                     vet.getColegiatura()
                 });
             }
-            
-            //mostrarMensajeInfo("Veterinarios cargados: " + veterinarios.size());
         } catch (SQLException e) {
             mostrarMensajeError("Error al cargar veterinarios: " + e.getMessage());
         }
@@ -373,8 +401,6 @@ public class PanelPersonal extends JPanel {
                     tec.getTelefono()
                 });
             }
-            
-            //mostrarMensajeInfo("Técnicos cargados: " + tecnicos.size());
         } catch (SQLException e) {
             mostrarMensajeError("Error al cargar técnicos: " + e.getMessage());
         }
@@ -388,6 +414,62 @@ public class PanelPersonal extends JPanel {
         mostrarMensajeInfo("Función de edición pendiente");
     }
     
+    private void eliminarVeterinarioSeleccionado() {
+        int filaSeleccionada = tablaVeterinarios.getSelectedRow();
+        if (filaSeleccionada < 0) {
+            mostrarMensajeInfo("Seleccione un veterinario para eliminar");
+            return;
+        }
+        
+        int filaModelo = tablaVeterinarios.convertRowIndexToModel(filaSeleccionada);
+        int idVeterinario = (int) modeloVeterinarios.getValueAt(filaModelo, 0);
+        String nombre = modeloVeterinarios.getValueAt(filaModelo, 1) + " " + modeloVeterinarios.getValueAt(filaModelo, 2);
+        
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "¿Está seguro de eliminar al veterinario '" + nombre + "'?",
+            "Confirmar Eliminación",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                veterinarioDAO.eliminar(idVeterinario);
+                mostrarMensajeExito("Veterinario eliminado correctamente");
+                cargarVeterinarios();
+            } catch (SQLException ex) {
+                mostrarMensajeError("No se puede eliminar el veterinario. Puede tener registros asociados.");
+            }
+        }
+    }
+    
+    private void eliminarTecnicoSeleccionado() {
+        int filaSeleccionada = tablaTecnicos.getSelectedRow();
+        if (filaSeleccionada < 0) {
+            mostrarMensajeInfo("Seleccione un técnico para eliminar");
+            return;
+        }
+        
+        int filaModelo = tablaTecnicos.convertRowIndexToModel(filaSeleccionada);
+        int idTecnico = (int) modeloTecnicos.getValueAt(filaModelo, 0);
+        String nombre = modeloTecnicos.getValueAt(filaModelo, 1) + " " + modeloTecnicos.getValueAt(filaModelo, 2);
+        
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "¿Está seguro de eliminar al técnico '" + nombre + "'?",
+            "Confirmar Eliminación",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                tecnicoDAO.eliminar(idTecnico);
+                mostrarMensajeExito("Técnico eliminado correctamente");
+                cargarTecnicos();
+            } catch (SQLException ex) {
+                mostrarMensajeError("No se puede eliminar el técnico. Puede tener registros asociados.");
+            }
+        }
+    }
+    
     private boolean validarCampos(JTextField... campos) {
         for (JTextField campo : campos) {
             if (campo.getText().trim().isEmpty()) {
@@ -399,11 +481,7 @@ public class PanelPersonal extends JPanel {
     
     private Font obtenerFuenteConSimbolos(int tamaño) {
         String[] fuentesCompatibles = {
-            "Segoe UI",
-            "Arial",
-            "DejaVu Sans",
-            "Tahoma",
-            "SansSerif"
+            "Segoe UI", "Arial", "DejaVu Sans", "Tahoma", "SansSerif"
         };
         
         for (String nombreFuente : fuentesCompatibles) {
@@ -452,16 +530,5 @@ public class PanelPersonal extends JPanel {
     
     private void mostrarMensajeInfo(String mensaje) {
         JOptionPane.showMessageDialog(this, mensaje, "Información", JOptionPane.INFORMATION_MESSAGE);
-    }
-    
-    // Main para testing
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Test Panel Personal");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-            frame.add(new PanelPersonal());
-            frame.setVisible(true);
-        });
     }
 }
