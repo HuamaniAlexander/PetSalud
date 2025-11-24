@@ -3,10 +3,12 @@ package vista;
 import controlador.ControladorModulos;
 import modelo.entidades.OrdenVeterinaria;
 import modelo.Enumeraciones.*;
+import dao.OrdenDAO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.sql.SQLException;
 import java.util.List;
 
 public class PanelOrdenLaboratorio extends JPanel {
@@ -19,10 +21,13 @@ public class PanelOrdenLaboratorio extends JPanel {
     private static final Color COLOR_TEXT = new Color(33, 33, 33);
     
     private ControladorModulos controlador;
+    private OrdenDAO ordenDAO;
     private DefaultTableModel modeloTabla;
+    private JComboBox<EstadoOrden> cmbEstadoFiltro;
     
     public PanelOrdenLaboratorio() {
         this.controlador = new ControladorModulos();
+        this.ordenDAO = new OrdenDAO();
         setLayout(new BorderLayout(20, 20));
         setBackground(COLOR_BACKGROUND);
         
@@ -148,14 +153,31 @@ public class PanelOrdenLaboratorio extends JPanel {
         ));
         
         JLabel lblEstado = crearEtiqueta("Filtrar por estado:");
-        JComboBox<EstadoOrden> cmbEstado = new JComboBox<>(EstadoOrden.values());
-        cmbEstado.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        cmbEstadoFiltro = new JComboBox<>();
+        cmbEstadoFiltro.addItem(null); // Opción "Todos"
+        for (EstadoOrden estado : EstadoOrden.values()) {
+            cmbEstadoFiltro.addItem(estado);
+        }
+        cmbEstadoFiltro.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        cmbEstadoFiltro.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, 
+                    int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value == null) {
+                    setText("-- Todos --");
+                } else {
+                    setText(((EstadoOrden) value).getDescripcion());
+                }
+                return this;
+            }
+        });
         
         JButton btnFiltrar = crearBoton("\uD83D\uDD0D Filtrar", COLOR_SECONDARY);
         JButton btnActualizar = crearBoton("\uD83D\uDD04 Actualizar", COLOR_PRIMARY);
         
         panelFiltros.add(lblEstado);
-        panelFiltros.add(cmbEstado);
+        panelFiltros.add(cmbEstadoFiltro);
         panelFiltros.add(btnFiltrar);
         panelFiltros.add(btnActualizar);
         
@@ -185,6 +207,7 @@ public class PanelOrdenLaboratorio extends JPanel {
         ));
         
         JButton btnProcesar = crearBoton("\u25B6 Procesar Orden", COLOR_PRIMARY);
+        JButton btnCambiarEstado = crearBoton("\u270F Cambiar Estado", new Color(255, 152, 0));
         JButton btnVerDetalle = crearBoton("\uD83D\uDC41 Ver Detalle", COLOR_SECONDARY);
         
         btnProcesar.addActionListener(e -> {
@@ -194,9 +217,45 @@ public class PanelOrdenLaboratorio extends JPanel {
                 boolean resultado = controlador.procesarOrden(idOrden);
                 if (resultado) {
                     mostrarMensajeExito("Orden procesada exitosamente");
-                    cargarOrdenes(cmbEstado);
+                    cargarOrdenes(cmbEstadoFiltro);
                 } else {
                     mostrarMensajeError("No se pudo procesar la orden");
+                }
+            } else {
+                mostrarMensajeInfo("Seleccione una orden");
+            }
+        });
+        
+        btnCambiarEstado.addActionListener(e -> {
+            int filaSeleccionada = tabla.getSelectedRow();
+            if (filaSeleccionada >= 0) {
+                int idOrden = (int) modeloTabla.getValueAt(filaSeleccionada, 0);
+                String estadoActual = (String) modeloTabla.getValueAt(filaSeleccionada, 3);
+                
+                // Mostrar diálogo para cambiar estado
+                EstadoOrden[] opciones = EstadoOrden.values();
+                EstadoOrden nuevoEstado = (EstadoOrden) JOptionPane.showInputDialog(
+                    this,
+                    "Seleccione el nuevo estado para la orden #" + idOrden + "\nEstado actual: " + estadoActual,
+                    "Cambiar Estado",
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    opciones,
+                    opciones[0]
+                );
+                
+                if (nuevoEstado != null) {
+                    try {
+                        OrdenVeterinaria orden = ordenDAO.obtenerPorId(idOrden);
+                        if (orden != null) {
+                            orden.setEstado(nuevoEstado);
+                            ordenDAO.actualizar(orden);
+                            mostrarMensajeExito("Estado actualizado a: " + nuevoEstado.getDescripcion());
+                            cargarOrdenes(cmbEstadoFiltro);
+                        }
+                    } catch (SQLException ex) {
+                        mostrarMensajeError("Error al cambiar estado: " + ex.getMessage());
+                    }
                 }
             } else {
                 mostrarMensajeInfo("Seleccione una orden");
@@ -207,31 +266,60 @@ public class PanelOrdenLaboratorio extends JPanel {
             int filaSeleccionada = tabla.getSelectedRow();
             if (filaSeleccionada >= 0) {
                 int idOrden = (int) modeloTabla.getValueAt(filaSeleccionada, 0);
-                String detalle = controlador.obtenerHistorialMascota(idOrden);
-                JTextArea textArea = new JTextArea(detalle);
-                textArea.setEditable(false);
-                textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-                JScrollPane scrollPane2 = new JScrollPane(textArea);
-                scrollPane2.setPreferredSize(new Dimension(500, 300));
-                JOptionPane.showMessageDialog(this, scrollPane2, "Detalle de Orden", JOptionPane.INFORMATION_MESSAGE);
+                try {
+                    OrdenVeterinaria orden = ordenDAO.obtenerPorId(idOrden);
+                    if (orden != null) {
+                        String detalle = construirDetalleOrden(orden);
+                        JTextArea textArea = new JTextArea(detalle);
+                        textArea.setEditable(false);
+                        textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+                        JScrollPane scrollPane2 = new JScrollPane(textArea);
+                        scrollPane2.setPreferredSize(new Dimension(500, 300));
+                        JOptionPane.showMessageDialog(this, scrollPane2, "Detalle de Orden #" + idOrden, JOptionPane.INFORMATION_MESSAGE);
+                    }
+                } catch (SQLException ex) {
+                    mostrarMensajeError("Error al obtener detalle: " + ex.getMessage());
+                }
             } else {
                 mostrarMensajeInfo("Seleccione una orden");
             }
         });
         
         panelAcciones.add(btnProcesar);
+        panelAcciones.add(btnCambiarEstado);
         panelAcciones.add(btnVerDetalle);
         
-        btnFiltrar.addActionListener(e -> cargarOrdenes(cmbEstado));
-        btnActualizar.addActionListener(e -> cargarOrdenes(cmbEstado));
+        btnFiltrar.addActionListener(e -> cargarOrdenes(cmbEstadoFiltro));
+        btnActualizar.addActionListener(e -> {
+            cmbEstadoFiltro.setSelectedIndex(0); // Seleccionar "Todos"
+            cargarOrdenes(cmbEstadoFiltro);
+        });
         
-        cargarOrdenes(cmbEstado);
+        cargarOrdenes(cmbEstadoFiltro);
         
         panelPrincipal.add(panelFiltros, BorderLayout.NORTH);
         panelPrincipal.add(scrollPane, BorderLayout.CENTER);
         panelPrincipal.add(panelAcciones, BorderLayout.SOUTH);
         
         return panelPrincipal;
+    }
+    
+    private String construirDetalleOrden(OrdenVeterinaria orden) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("═══════════════════════════════════════\n");
+        sb.append("          DETALLE DE ORDEN\n");
+        sb.append("═══════════════════════════════════════\n\n");
+        sb.append("ID Orden: ").append(orden.getIdOrden()).append("\n");
+        sb.append("Fecha: ").append(orden.getFechaOrden()).append("\n");
+        sb.append("Tipo de Examen: ").append(orden.getTipoExamen().getDescripcion()).append("\n");
+        sb.append("Estado: ").append(orden.getEstado().getDescripcion()).append("\n");
+        sb.append("ID Mascota: ").append(orden.getIdMascota()).append("\n");
+        sb.append("ID Veterinario: ").append(orden.getIdVeterinario()).append("\n\n");
+        sb.append("Observaciones:\n");
+        sb.append(orden.getObservaciones() != null ? orden.getObservaciones() : "Sin observaciones").append("\n\n");
+        sb.append("Última actualización: ").append(orden.getFechaActualizacion()).append("\n");
+        sb.append("═══════════════════════════════════════\n");
+        return sb.toString();
     }
     
     private JPanel crearPanelOrdenesPendientes() {
@@ -298,21 +386,35 @@ public class PanelOrdenLaboratorio extends JPanel {
     }
     
     private void cargarOrdenes(JComboBox<EstadoOrden> cmbEstado) {
-        EstadoOrden estadoSeleccionado = (EstadoOrden) cmbEstado.getSelectedItem();
-        List<OrdenVeterinaria> ordenes = controlador.listarOrdenesPendientes();
-        
         modeloTabla.setRowCount(0);
-        if (ordenes != null) {
-            for (OrdenVeterinaria orden : ordenes) {
-                modeloTabla.addRow(new Object[]{
-                    orden.getIdOrden(),
-                    orden.getFechaOrden(),
-                    orden.getTipoExamen().getDescripcion(),
-                    orden.getEstado().getDescripcion(),
-                    orden.getIdMascota(),
-                    orden.getIdVeterinario()
-                });
+        
+        EstadoOrden estadoSeleccionado = (EstadoOrden) cmbEstado.getSelectedItem();
+        
+        try {
+            List<OrdenVeterinaria> ordenes;
+            
+            if (estadoSeleccionado == null) {
+                // Cargar todas las órdenes
+                ordenes = ordenDAO.listarTodos();
+            } else {
+                // Filtrar por estado
+                ordenes = ordenDAO.listarPorEstado(estadoSeleccionado);
             }
+            
+            if (ordenes != null) {
+                for (OrdenVeterinaria orden : ordenes) {
+                    modeloTabla.addRow(new Object[]{
+                        orden.getIdOrden(),
+                        orden.getFechaOrden(),
+                        orden.getTipoExamen().getDescripcion(),
+                        orden.getEstado().getDescripcion(),
+                        orden.getIdMascota(),
+                        orden.getIdVeterinario()
+                    });
+                }
+            }
+        } catch (SQLException ex) {
+            mostrarMensajeError("Error al cargar órdenes: " + ex.getMessage());
         }
     }
     
@@ -358,16 +460,5 @@ public class PanelOrdenLaboratorio extends JPanel {
     
     private void mostrarMensajeInfo(String mensaje) {
         JOptionPane.showMessageDialog(this, mensaje, "Informacion", JOptionPane.INFORMATION_MESSAGE);
-    }
-    
-    // main para testing
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Test Panel Orden Laboratorio");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-            frame.add(new PanelOrdenLaboratorio());
-            frame.setVisible(true);
-        });
     }
 }

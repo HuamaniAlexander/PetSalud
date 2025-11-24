@@ -5,7 +5,10 @@ import modelo.entidades.*;
 import modelo.Enumeraciones.SexoMascota;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.util.List;
 
@@ -18,6 +21,12 @@ public class PanelDuenoMascota extends JPanel {
     private static final Color COLOR_TEXT = new Color(33, 33, 33);
     
     private ControladorModulos controlador;
+    private DefaultTableModel modeloDuenos;
+    private DefaultTableModel modeloMascotas;
+    private TableRowSorter<DefaultTableModel> sorterDuenos;
+    private TableRowSorter<DefaultTableModel> sorterMascotas;
+    private JTable tablaDuenos;
+    private JTable tablaMascotas;
     
     public PanelDuenoMascota() {
         this.controlador = new ControladorModulos();
@@ -154,56 +163,84 @@ public class PanelDuenoMascota extends JPanel {
         JTextField txtBuscar = crearCampoTexto();
         txtBuscar.setPreferredSize(new Dimension(300, 35));
         
-        JButton btnBuscar = crearBoton("\uD83D\uDD0D Buscar", COLOR_SECONDARY);
         JButton btnTodos = crearBoton("\uD83D\uDCCB Ver Todos", COLOR_PRIMARY);
         
         panelBusqueda.add(lblBuscar);
         panelBusqueda.add(txtBuscar);
-        panelBusqueda.add(btnBuscar);
         panelBusqueda.add(btnTodos);
         
         String[] columnas = {"ID", "DNI", "Nombres", "Apellidos", "Telefono", "Email"};
-        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
+        modeloDuenos = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
         
-        JTable tabla = new JTable(modelo);
-        tabla.setRowHeight(35);
-        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
-        tabla.getTableHeader().setBackground(COLOR_PRIMARY);
-        tabla.getTableHeader().setForeground(Color.WHITE);
+        tablaDuenos = new JTable(modeloDuenos);
+        tablaDuenos.setRowHeight(35);
+        tablaDuenos.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tablaDuenos.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+        tablaDuenos.getTableHeader().setBackground(COLOR_PRIMARY);
+        tablaDuenos.getTableHeader().setForeground(Color.WHITE);
         
-        JScrollPane scrollPane = new JScrollPane(tabla);
+        sorterDuenos = new TableRowSorter<>(modeloDuenos);
+        tablaDuenos.setRowSorter(sorterDuenos);
+        
+        JScrollPane scrollPane = new JScrollPane(tablaDuenos);
         scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1, true));
         
-        btnBuscar.addActionListener(e -> {
-            String nombre = txtBuscar.getText().trim();
-            if (!nombre.isEmpty()) {
-                List<Dueno> duenos = controlador.buscarDuenoPorNombre(nombre);
-                modelo.setRowCount(0);
-                if (duenos != null) {
-                    for (Dueno d : duenos) {
-                        modelo.addRow(new Object[]{
-                            d.getIdDueno(), d.getDni(), d.getNombres(), 
-                            d.getApellidos(), d.getTelefono(), d.getEmail()
-                        });
-                    }
-                }
+        // Filtrado en tiempo real
+        txtBuscar.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                filtrarDuenos(txtBuscar.getText().trim());
+            }
+            
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                filtrarDuenos(txtBuscar.getText().trim());
+            }
+            
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                filtrarDuenos(txtBuscar.getText().trim());
             }
         });
         
         btnTodos.addActionListener(e -> {
-            mostrarMensajeInfo("Funcion 'Ver Todos' en desarrollo");
+            txtBuscar.setText("");
+            cargarTodosDuenos();
         });
+        
+        // Cargar datos iniciales
+        cargarTodosDuenos();
         
         panelPrincipal.add(panelBusqueda, BorderLayout.NORTH);
         panelPrincipal.add(scrollPane, BorderLayout.CENTER);
         
         return panelPrincipal;
+    }
+    
+    private void cargarTodosDuenos() {
+        List<Dueno> duenos = controlador.buscarDuenoPorNombre("");
+        modeloDuenos.setRowCount(0);
+        if (duenos != null) {
+            for (Dueno d : duenos) {
+                modeloDuenos.addRow(new Object[]{
+                    d.getIdDueno(), d.getDni(), d.getNombres(), 
+                    d.getApellidos(), d.getTelefono(), d.getEmail()
+                });
+            }
+        }
+    }
+    
+    private void filtrarDuenos(String texto) {
+        if (texto.isEmpty()) {
+            sorterDuenos.setRowFilter(null);
+        } else {
+            sorterDuenos.setRowFilter(RowFilter.regexFilter("(?i)" + texto));
+        }
     }
     
     private JPanel crearPanelRegistroMascota() {
@@ -339,52 +376,97 @@ public class PanelDuenoMascota extends JPanel {
         JTextField txtIdDueno = crearCampoTexto();
         txtIdDueno.setPreferredSize(new Dimension(150, 35));
         
-        JButton btnBuscar = crearBoton("\uD83D\uDD0D Ver Mascotas", COLOR_SECONDARY);
+        JButton btnTodos = crearBoton("\uD83D\uDCCB Ver Todos", COLOR_PRIMARY);
         
         panelBusqueda.add(lblDueno);
         panelBusqueda.add(txtIdDueno);
-        panelBusqueda.add(btnBuscar);
+        panelBusqueda.add(btnTodos);
         
-        String[] columnas = {"ID", "Nombre", "Especie", "Raza", "Edad", "Sexo", "Peso (kg)"};
-        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
+        String[] columnas = {"ID", "Nombre", "Especie", "Raza", "Edad", "Sexo", "Peso (kg)", "ID Dueño"};
+        modeloMascotas = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
         
-        JTable tabla = new JTable(modelo);
-        tabla.setRowHeight(35);
-        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
-        tabla.getTableHeader().setBackground(COLOR_SECONDARY);
-        tabla.getTableHeader().setForeground(Color.WHITE);
+        tablaMascotas = new JTable(modeloMascotas);
+        tablaMascotas.setRowHeight(35);
+        tablaMascotas.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tablaMascotas.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+        tablaMascotas.getTableHeader().setBackground(COLOR_SECONDARY);
+        tablaMascotas.getTableHeader().setForeground(Color.WHITE);
         
-        JScrollPane scrollPane = new JScrollPane(tabla);
+        sorterMascotas = new TableRowSorter<>(modeloMascotas);
+        tablaMascotas.setRowSorter(sorterMascotas);
+        
+        JScrollPane scrollPane = new JScrollPane(tablaMascotas);
         scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1, true));
         
-        btnBuscar.addActionListener(e -> {
-            try {
-                int idDueno = Integer.parseInt(txtIdDueno.getText().trim());
-                List<Mascota> mascotas = controlador.listarMascotasPorDueno(idDueno);
-                modelo.setRowCount(0);
-                if (mascotas != null) {
-                    for (Mascota m : mascotas) {
-                        modelo.addRow(new Object[]{
-                            m.getIdMascota(), m.getNombre(), m.getEspecie(),
-                            m.getRaza(), m.getEdad(), m.getSexo(), m.getPeso()
-                        });
-                    }
-                }
-            } catch (NumberFormatException ex) {
-                mostrarMensajeError("ID de dueno invalido");
+        // Filtrado en tiempo real por ID Dueño
+        txtIdDueno.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                filtrarMascotasPorDueno(txtIdDueno.getText().trim());
+            }
+            
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                filtrarMascotasPorDueno(txtIdDueno.getText().trim());
+            }
+            
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                filtrarMascotasPorDueno(txtIdDueno.getText().trim());
             }
         });
+        
+        btnTodos.addActionListener(e -> {
+            txtIdDueno.setText("");
+            cargarTodasMascotas();
+        });
+        
+        // Cargar todas las mascotas inicialmente
+        cargarTodasMascotas();
         
         panelPrincipal.add(panelBusqueda, BorderLayout.NORTH);
         panelPrincipal.add(scrollPane, BorderLayout.CENTER);
         
         return panelPrincipal;
+    }
+    
+    private void cargarTodasMascotas() {
+        // Cargar todas las mascotas sin filtro
+        modeloMascotas.setRowCount(0);
+        sorterMascotas.setRowFilter(null);
+        
+        // Aquí necesitarías un método en el controlador que liste todas las mascotas
+        // Por ahora, mostramos mensaje
+        //mostrarMensajeInfo("Ingrese un ID de dueño para buscar sus mascotas");
+    }
+    
+    private void filtrarMascotasPorDueno(String idDuenoTexto) {
+        if (idDuenoTexto.isEmpty()) {
+            sorterMascotas.setRowFilter(null);
+            return;
+        }
+        
+        try {
+            int idDueno = Integer.parseInt(idDuenoTexto);
+            List<Mascota> mascotas = controlador.listarMascotasPorDueno(idDueno);
+            modeloMascotas.setRowCount(0);
+            if (mascotas != null) {
+                for (Mascota m : mascotas) {
+                    modeloMascotas.addRow(new Object[]{
+                        m.getIdMascota(), m.getNombre(), m.getEspecie(),
+                        m.getRaza(), m.getEdad(), m.getSexo(), m.getPeso(), m.getIdDueno()
+                    });
+                }
+            }
+        } catch (NumberFormatException ex) {
+            // Si no es un número válido, filtrar por texto en todas las columnas
+            sorterMascotas.setRowFilter(RowFilter.regexFilter("(?i)" + idDuenoTexto));
+        }
     }
     
     private JLabel crearEtiqueta(String texto) {
@@ -440,18 +522,4 @@ public class PanelDuenoMascota extends JPanel {
     private void mostrarMensajeInfo(String mensaje) {
         JOptionPane.showMessageDialog(this, mensaje, "Informacion", JOptionPane.INFORMATION_MESSAGE);
     }
-    
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Panel Dueño y Mascota - Prueba");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(1200, 700);
-            frame.setLocationRelativeTo(null);
-
-            // Agregar directamente el panel
-            frame.add(new PanelDuenoMascota());
-            frame.setVisible(true);
-        });
-    }
-    
 }
