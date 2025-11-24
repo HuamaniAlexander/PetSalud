@@ -96,7 +96,7 @@ public class PanelUsuarios extends JPanel {
                 });
             }
             
-            mostrarMensajeExito("Usuarios cargados: " + usuarios.size());
+            //mostrarMensajeExito("Usuarios cargados: " + usuarios.size());
         } catch (SQLException e) {
             mostrarMensajeError("Error al cargar usuarios: " + e.getMessage());
         }

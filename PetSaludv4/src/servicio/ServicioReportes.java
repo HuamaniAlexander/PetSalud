@@ -7,7 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * Servicio para gestión y generación de reportes
+ * Servicio para gestión y generación de reportes - VERSIÓN CORREGIDA
  * Implementa patrón Bridge para diferentes formatos de salida
  */
 public class ServicioReportes {
@@ -107,17 +107,18 @@ public class ServicioReportes {
         contenido.append("═══════════════════════════════════════════════════════════════════════════════\n\n");
         
         for (Map<String, Object> orden : datos) {
-            contenido.append("ID Orden: ").append(orden.get("id_orden")).append("\n");
-            contenido.append("Fecha: ").append(orden.get("fecha_orden")).append("\n");
-            contenido.append("Tipo de Examen: ").append(orden.get("tipo_examen")).append("\n");
-            contenido.append("Estado: ").append(orden.get("estado")).append("\n");
-            contenido.append("Mascota: ").append(orden.get("mascota")).append(" (").append(orden.get("especie")).append(")\n");
-            contenido.append("Dueño: ").append(orden.get("dueno")).append("\n");
-            contenido.append("Teléfono: ").append(orden.get("telefono_dueno")).append("\n");
-            contenido.append("Veterinario: ").append(orden.get("veterinario"));
-            contenido.append(" - ").append(orden.get("especialidad_veterinario")).append("\n");
-            contenido.append("Tiene Resultado: ").append(orden.get("tiene_resultado")).append("\n");
-            contenido.append("Estado Resultado: ").append(orden.get("estado_resultado")).append("\n");
+            contenido.append("ID Orden: ").append(getValueSafe(orden, "id_orden")).append("\n");
+            contenido.append("Fecha: ").append(getValueSafe(orden, "fecha_orden")).append("\n");
+            contenido.append("Tipo de Examen: ").append(getValueSafe(orden, "tipo_examen")).append("\n");
+            contenido.append("Estado: ").append(getValueSafe(orden, "estado")).append("\n");
+            contenido.append("Mascota: ").append(getValueSafe(orden, "mascota"));
+            contenido.append(" (").append(getValueSafe(orden, "especie")).append(")\n");
+            contenido.append("Dueño: ").append(getValueSafe(orden, "dueno")).append("\n");
+            contenido.append("Teléfono: ").append(getValueSafe(orden, "telefono_dueno")).append("\n");
+            contenido.append("Veterinario: ").append(getValueSafe(orden, "veterinario"));
+            contenido.append(" - ").append(getValueSafe(orden, "especialidad_veterinario")).append("\n");
+            contenido.append("Tiene Resultado: ").append(getValueSafe(orden, "tiene_resultado")).append("\n");
+            contenido.append("Estado Resultado: ").append(getValueSafe(orden, "estado_resultado")).append("\n");
             
             Object obs = orden.get("observaciones");
             if (obs != null && !obs.toString().isEmpty()) {
@@ -136,7 +137,7 @@ public class ServicioReportes {
         // Calcular estadísticas
         int pendientes = 0, completadas = 0;
         for (Map<String, Object> orden : datos) {
-            String estadoOrden = orden.get("estado").toString();
+            String estadoOrden = getValueSafe(orden, "estado").toString();
             if (estadoOrden.contains("PENDIENTE")) pendientes++;
             if (estadoOrden.contains("COMPLETADA") || estadoOrden.contains("VALIDADA") || estadoOrden.contains("ENTREGADA")) completadas++;
         }
@@ -161,7 +162,7 @@ public class ServicioReportes {
         // Resumen
         contenido.append("RESUMEN GENERAL:\n");
         contenido.append("═══════════════════════════════════════════════════════════════════════════════\n");
-        contenido.append(String.format("Total Facturas: %s\n", resumen.getOrDefault("total_facturas", 0)));
+        contenido.append(String.format("Total Facturas: %s\n", getValueSafe(resumen, "total_facturas")));
         contenido.append(String.format("Total Facturado: S/ %.2f\n", getDouble(resumen, "total_facturado")));
         contenido.append(String.format("Total Pagado: S/ %.2f\n", getDouble(resumen, "total_pagado")));
         contenido.append(String.format("Total Pendiente: S/ %.2f\n", getDouble(resumen, "total_pendiente")));
@@ -178,13 +179,13 @@ public class ServicioReportes {
         contenido.append("───────────────────────────────────────────────────────────────────────────────\n\n");
         
         for (Map<String, Object> factura : datos) {
-            contenido.append("Factura #").append(factura.get("id_factura")).append("\n");
-            contenido.append("Fecha: ").append(factura.get("fecha")).append("\n");
-            contenido.append("Cliente: ").append(factura.get("cliente")).append("\n");
-            contenido.append("Teléfono: ").append(factura.get("telefono")).append("\n");
-            contenido.append("Método de Pago: ").append(factura.get("metodo_pago")).append("\n");
+            contenido.append("Factura #").append(getValueSafe(factura, "id_factura")).append("\n");
+            contenido.append("Fecha: ").append(getValueSafe(factura, "fecha")).append("\n");
+            contenido.append("Cliente: ").append(getValueSafe(factura, "cliente")).append("\n");
+            contenido.append("Teléfono: ").append(getValueSafe(factura, "telefono")).append("\n");
+            contenido.append("Método de Pago: ").append(getValueSafe(factura, "metodo_pago")).append("\n");
             contenido.append(String.format("Monto: S/ %.2f\n", getDouble(factura, "monto_total")));
-            contenido.append("Estado: ").append(factura.get("estado_pago")).append("\n");
+            contenido.append("Estado: ").append(getValueSafe(factura, "estado_pago")).append("\n");
             
             Object servicios = factura.get("servicios");
             if (servicios != null && !servicios.toString().isEmpty()) {
@@ -232,7 +233,7 @@ public class ServicioReportes {
             totalCompletados += getInt(tipo, "completados");
             totalValidados += getInt(tipo, "validados");
             
-            contenido.append("Tipo de Examen: ").append(tipo.get("tipo_examen")).append("\n");
+            contenido.append("Tipo de Examen: ").append(getValueSafe(tipo, "tipo_examen")).append("\n");
             contenido.append(String.format("  Cantidad: %d\n", cantidad));
             contenido.append(String.format("  Completados: %d\n", getInt(tipo, "completados")));
             contenido.append(String.format("  Validados: %d\n", getInt(tipo, "validados")));
@@ -245,8 +246,8 @@ public class ServicioReportes {
             }
             
             contenido.append(String.format("  Rango: %s - %s\n", 
-                tipo.getOrDefault("primera_fecha", "N/A"), 
-                tipo.getOrDefault("ultima_fecha", "N/A")));
+                getValueSafe(tipo, "primera_fecha"), 
+                getValueSafe(tipo, "ultima_fecha")));
             contenido.append("\n");
         }
         
@@ -261,7 +262,7 @@ public class ServicioReportes {
         
         List<String> analisisList = new ArrayList<>();
         for (Map<String, Object> tipo : datos) {
-            analisisList.add(tipo.get("tipo_examen") + ": " + tipo.get("cantidad_analisis") + " análisis");
+            analisisList.add(getValueSafe(tipo, "tipo_examen") + ": " + getValueSafe(tipo, "cantidad_analisis") + " análisis");
         }
         
         generador.setAnalisis(analisisList);
@@ -286,8 +287,8 @@ public class ServicioReportes {
         contenido.append("═══════════════════════════════════════════════════════════════════════════════\n\n");
         
         for (Map<String, Object> vet : datos) {
-            contenido.append("Veterinario: ").append(vet.get("veterinario")).append("\n");
-            contenido.append("Especialidad: ").append(vet.getOrDefault("especialidad", "N/A")).append("\n");
+            contenido.append("Veterinario: ").append(getValueSafe(vet, "veterinario")).append("\n");
+            contenido.append("Especialidad: ").append(getValueSafe(vet, "especialidad")).append("\n");
             contenido.append(String.format("Total Órdenes: %d\n", getInt(vet, "total_ordenes")));
             contenido.append(String.format("  - Pendientes: %d\n", getInt(vet, "pendientes")));
             contenido.append(String.format("  - En Proceso: %d\n", getInt(vet, "en_proceso")));
@@ -300,7 +301,7 @@ public class ServicioReportes {
         
         // Aplicar formato
         IFormatoReporte formatoReporte = obtenerFormato(formato);
-        GeneradorReporte generador = new ReporteOrdenes(formatoReporte);
+        ReporteOrdenes generador = new ReporteOrdenes(formatoReporte);
         generador.setContenido(contenido.toString());
         generador.setPeriodo(sdf.format(fechaInicio) + " - " + sdf.format(fechaFin));
         
@@ -323,6 +324,11 @@ public class ServicioReportes {
             default:
                 return new FormatoPDF();
         }
+    }
+    
+    private Object getValueSafe(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        return value != null ? value : "N/A";
     }
     
     private double getDouble(Map<String, Object> map, String key) {

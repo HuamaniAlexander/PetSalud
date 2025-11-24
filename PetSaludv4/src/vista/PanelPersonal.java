@@ -353,7 +353,7 @@ public class PanelPersonal extends JPanel {
                 });
             }
             
-            mostrarMensajeInfo("Veterinarios cargados: " + veterinarios.size());
+            //mostrarMensajeInfo("Veterinarios cargados: " + veterinarios.size());
         } catch (SQLException e) {
             mostrarMensajeError("Error al cargar veterinarios: " + e.getMessage());
         }
@@ -374,7 +374,7 @@ public class PanelPersonal extends JPanel {
                 });
             }
             
-            mostrarMensajeInfo("Técnicos cargados: " + tecnicos.size());
+            //mostrarMensajeInfo("Técnicos cargados: " + tecnicos.size());
         } catch (SQLException e) {
             mostrarMensajeError("Error al cargar técnicos: " + e.getMessage());
         }
