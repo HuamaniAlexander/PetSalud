@@ -10,6 +10,7 @@ import java.util.List;
 public class ReporteLaboratorio extends GeneradorReporte {
     private List<String> analisis;
     private String periodo;
+    private String contenido;
     
     public ReporteLaboratorio(IFormatoReporte formato) {
         super(formato);
@@ -23,20 +24,28 @@ public class ReporteLaboratorio extends GeneradorReporte {
         this.periodo = periodo;
     }
     
+    public void setContenido(String contenido) {
+        this.contenido = contenido;
+    }
+    
     @Override
     protected String prepararContenido() {
+        if (contenido != null && !contenido.isEmpty()) {
+            return contenido;
+        }
+        
         StringBuilder sb = new StringBuilder();
         sb.append("REPORTE DE LABORATORIO\n");
-        sb.append("Periodo: ").append(periodo != null ? periodo : "No especificado").append("\n\n");
+        sb.append("Período: ").append(periodo != null ? periodo : "No especificado").append("\n\n");
         
         if (analisis != null && !analisis.isEmpty()) {
-            sb.append("Analisis realizados:\n");
+            sb.append("Análisis realizados:\n");
             for (int i = 0; i < analisis.size(); i++) {
                 sb.append((i + 1)).append(". ").append(analisis.get(i)).append("\n");
             }
-            sb.append("\nTotal de analisis: ").append(analisis.size());
+            sb.append("\nTotal de análisis: ").append(analisis.size());
         } else {
-            sb.append("No hay analisis registrados");
+            sb.append("No hay análisis registrados");
         }
         
         return sb.toString();

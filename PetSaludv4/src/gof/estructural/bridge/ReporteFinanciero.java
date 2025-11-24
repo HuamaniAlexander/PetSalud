@@ -10,6 +10,7 @@ public class ReporteFinanciero extends GeneradorReporte {
     private double ingresos;
     private double egresos;
     private String periodo;
+    private String contenido;
     
     public ReporteFinanciero(IFormatoReporte formato) {
         super(formato);
@@ -27,11 +28,19 @@ public class ReporteFinanciero extends GeneradorReporte {
         this.periodo = periodo;
     }
     
+    public void setContenido(String contenido) {
+        this.contenido = contenido;
+    }
+    
     @Override
     protected String prepararContenido() {
+        if (contenido != null && !contenido.isEmpty()) {
+            return contenido;
+        }
+        
         StringBuilder sb = new StringBuilder();
         sb.append("REPORTE FINANCIERO\n");
-        sb.append("Periodo: ").append(periodo != null ? periodo : "No especificado").append("\n\n");
+        sb.append("Período: ").append(periodo != null ? periodo : "No especificado").append("\n\n");
         sb.append("Ingresos: S/ ").append(String.format("%.2f", ingresos)).append("\n");
         sb.append("Egresos: S/ ").append(String.format("%.2f", egresos)).append("\n");
         sb.append("----------------------------------------\n");
@@ -42,7 +51,7 @@ public class ReporteFinanciero extends GeneradorReporte {
         if (balance > 0) {
             sb.append(" (GANANCIA)");
         } else if (balance < 0) {
-            sb.append(" (PERDIDA)");
+            sb.append(" (PÉRDIDA)");
         }
         
         return sb.toString();

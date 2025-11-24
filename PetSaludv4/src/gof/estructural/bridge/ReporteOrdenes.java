@@ -1,12 +1,13 @@
-
 package gof.estructural.bridge;
 
-// Abstraccion refinada: Reporte de ordenes
+import java.util.List;
+
 public class ReporteOrdenes extends GeneradorReporte {
     private int totalOrdenes;
     private int pendientes;
     private int completadas;
     private String periodo;
+    private String contenido;
     
     public ReporteOrdenes(IFormatoReporte formato) {
         super(formato);
@@ -28,12 +29,20 @@ public class ReporteOrdenes extends GeneradorReporte {
         this.periodo = periodo;
     }
     
+    public void setContenido(String contenido) {
+        this.contenido = contenido;
+    }
+    
     @Override
     protected String prepararContenido() {
+        if (contenido != null && !contenido.isEmpty()) {
+            return contenido;
+        }
+        
         StringBuilder sb = new StringBuilder();
-        sb.append("REPORTE DE ORDENES VETERINARIAS\n");
-        sb.append("Periodo: ").append(periodo != null ? periodo : "No especificado").append("\n\n");
-        sb.append("Total de Ordenes: ").append(totalOrdenes).append("\n");
+        sb.append("REPORTE DE ÓRDENES VETERINARIAS\n");
+        sb.append("Período: ").append(periodo != null ? periodo : "No especificado").append("\n\n");
+        sb.append("Total de Órdenes: ").append(totalOrdenes).append("\n");
         sb.append("Pendientes: ").append(pendientes).append("\n");
         sb.append("Completadas: ").append(completadas).append("\n");
         
