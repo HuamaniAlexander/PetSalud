@@ -7,162 +7,148 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DAO para Mascota - Gestion de mascotas
+ * DAO para Mascota usando Procedimientos Almacenados
  */
 public class MascotaDAO extends GenericDAO<Mascota> {
     
     @Override
     public Mascota crear(Mascota mascota) throws SQLException {
-        String sql = "INSERT INTO mascota (nombre, especie, raza, edad, sexo, peso, id_dueno) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_crear_mascota(?, ?, ?, ?, ?, ?, ?, ?)}";
+        CallableStatement cs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, mascota.getNombre());
-            ps.setString(2, mascota.getEspecie());
-            ps.setString(3, mascota.getRaza());
-            ps.setInt(4, mascota.getEdad());
-            ps.setString(5, mascota.getSexo().name());
-            ps.setDouble(6, mascota.getPeso());
-            ps.setInt(7, mascota.getIdDueno());
+            cs = conn.prepareCall(sql);
+            cs.setString(1, mascota.getNombre());
+            cs.setString(2, mascota.getEspecie());
+            cs.setString(3, mascota.getRaza());
+            cs.setInt(4, mascota.getEdad());
+            cs.setString(5, mascota.getSexo().name());
+            cs.setDouble(6, mascota.getPeso());
+            cs.setInt(7, mascota.getIdDueno());
+            cs.registerOutParameter(8, Types.INTEGER);
             
-            ps.executeUpdate();
-            mascota.setIdMascota(obtenerUltimoId(ps));
+            cs.execute();
+            mascota.setIdMascota(cs.getInt(8));
             
             return mascota;
         } finally {
-            cerrarRecursos(ps);
+            if (cs != null) cs.close();
         }
     }
     
     @Override
     public Mascota obtenerPorId(int id) throws SQLException {
-        String sql = "SELECT * FROM mascota WHERE id_mascota = ?";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_obtener_mascota_por_id(?)}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, id);
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            cs.setInt(1, id);
+            rs = cs.executeQuery();
             
             if (rs.next()) {
                 return mapearMascota(rs);
             }
             return null;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
     @Override
     public List<Mascota> listarTodos() throws SQLException {
-        String sql = "SELECT * FROM mascota ORDER BY nombre";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_listar_mascotas()}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         List<Mascota> mascotas = new ArrayList<>();
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            rs = cs.executeQuery();
             
             while (rs.next()) {
                 mascotas.add(mapearMascota(rs));
             }
             return mascotas;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
     @Override
     public Mascota actualizar(Mascota mascota) throws SQLException {
-        String sql = "UPDATE mascota SET nombre = ?, especie = ?, raza = ?, edad = ?, sexo = ?, peso = ?, id_dueno = ? WHERE id_mascota = ?";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_actualizar_mascota(?, ?, ?, ?, ?, ?, ?)}";
+        CallableStatement cs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, mascota.getNombre());
-            ps.setString(2, mascota.getEspecie());
-            ps.setString(3, mascota.getRaza());
-            ps.setInt(4, mascota.getEdad());
-            ps.setString(5, mascota.getSexo().name());
-            ps.setDouble(6, mascota.getPeso());
-            ps.setInt(7, mascota.getIdDueno());
-            ps.setInt(8, mascota.getIdMascota());
+            cs = conn.prepareCall(sql);
+            cs.setInt(1, mascota.getIdMascota());
+            cs.setString(2, mascota.getNombre());
+            cs.setString(3, mascota.getEspecie());
+            cs.setString(4, mascota.getRaza());
+            cs.setInt(5, mascota.getEdad());
+            cs.setString(6, mascota.getSexo().name());
+            cs.setDouble(7, mascota.getPeso());
             
-            ps.executeUpdate();
+            cs.execute();
             return mascota;
         } finally {
-            cerrarRecursos(ps);
+            if (cs != null) cs.close();
         }
     }
     
     @Override
     public boolean eliminar(int id) throws SQLException {
-        String sql = "DELETE FROM mascota WHERE id_mascota = ?";
-        PreparedStatement ps = null;
-        
-        try {
-            Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, id);
-            
-            return ps.executeUpdate() > 0;
-        } finally {
-            cerrarRecursos(ps);
-        }
+        return false;
     }
     
-    // Metodo especifico: Listar mascotas por dueno
     public List<Mascota> listarPorDueno(int idDueno) throws SQLException {
-        String sql = "SELECT * FROM mascota WHERE id_dueno = ? ORDER BY nombre";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_listar_mascotas_por_dueno(?)}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         List<Mascota> mascotas = new ArrayList<>();
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, idDueno);
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            cs.setInt(1, idDueno);
+            rs = cs.executeQuery();
             
             while (rs.next()) {
                 mascotas.add(mapearMascota(rs));
             }
             return mascotas;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
-    // Metodo especifico: Buscar por nombre
     public List<Mascota> buscarPorNombre(String nombre) throws SQLException {
-        String sql = "SELECT * FROM mascota WHERE nombre LIKE ? ORDER BY nombre";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_buscar_mascota_por_nombre(?)}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         List<Mascota> mascotas = new ArrayList<>();
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, "%" + nombre + "%");
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            cs.setString(1, nombre);
+            rs = cs.executeQuery();
             
             while (rs.next()) {
                 mascotas.add(mapearMascota(rs));
             }
             return mascotas;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
-    // Mapear ResultSet a Mascota
     private Mascota mapearMascota(ResultSet rs) throws SQLException {
         Mascota mascota = new Mascota();
         mascota.setIdMascota(rs.getInt("id_mascota"));
@@ -175,5 +161,14 @@ public class MascotaDAO extends GenericDAO<Mascota> {
         mascota.setIdDueno(rs.getInt("id_dueno"));
         mascota.setFechaRegistro(rs.getTimestamp("fecha_registro"));
         return mascota;
+    }
+    
+    private void cerrarRecursos(ResultSet rs, CallableStatement cs) {
+        try {
+            if (rs != null) rs.close();
+            if (cs != null) cs.close();
+        } catch (SQLException e) {
+            System.err.println("Error al cerrar recursos: " + e.getMessage());
+        }
     }
 }

@@ -6,159 +6,147 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DAO para Dueno - Gestion de propietarios de mascotas
+ * DAO para Dueno usando Procedimientos Almacenados
  */
 public class DuenoDAO extends GenericDAO<Dueno> {
     
     @Override
     public Dueno crear(Dueno dueno) throws SQLException {
-        String sql = "INSERT INTO dueno (dni, nombres, apellidos, telefono, email, direccion) VALUES (?, ?, ?, ?, ?, ?)";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_crear_dueno(?, ?, ?, ?, ?, ?, ?)}";
+        CallableStatement cs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, dueno.getDni());
-            ps.setString(2, dueno.getNombres());
-            ps.setString(3, dueno.getApellidos());
-            ps.setString(4, dueno.getTelefono());
-            ps.setString(5, dueno.getEmail());
-            ps.setString(6, dueno.getDireccion());
+            cs = conn.prepareCall(sql);
+            cs.setString(1, dueno.getDni());
+            cs.setString(2, dueno.getNombres());
+            cs.setString(3, dueno.getApellidos());
+            cs.setString(4, dueno.getTelefono());
+            cs.setString(5, dueno.getEmail());
+            cs.setString(6, dueno.getDireccion());
+            cs.registerOutParameter(7, Types.INTEGER);
             
-            ps.executeUpdate();
-            dueno.setIdDueno(obtenerUltimoId(ps));
+            cs.execute();
+            dueno.setIdDueno(cs.getInt(7));
             
             return dueno;
         } finally {
-            cerrarRecursos(ps);
+            if (cs != null) cs.close();
         }
     }
     
     @Override
     public Dueno obtenerPorId(int id) throws SQLException {
-        String sql = "SELECT * FROM dueno WHERE id_dueno = ?";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_obtener_dueno_por_id(?)}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, id);
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            cs.setInt(1, id);
+            rs = cs.executeQuery();
             
             if (rs.next()) {
                 return mapearDueno(rs);
             }
             return null;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
     @Override
     public List<Dueno> listarTodos() throws SQLException {
-        String sql = "SELECT * FROM dueno ORDER BY apellidos, nombres";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_listar_duenos()}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         List<Dueno> duenos = new ArrayList<>();
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            rs = cs.executeQuery();
             
             while (rs.next()) {
                 duenos.add(mapearDueno(rs));
             }
             return duenos;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
     @Override
     public Dueno actualizar(Dueno dueno) throws SQLException {
-        String sql = "UPDATE dueno SET dni = ?, nombres = ?, apellidos = ?, telefono = ?, email = ?, direccion = ? WHERE id_dueno = ?";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_actualizar_dueno(?, ?, ?, ?, ?, ?, ?)}";
+        CallableStatement cs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, dueno.getDni());
-            ps.setString(2, dueno.getNombres());
-            ps.setString(3, dueno.getApellidos());
-            ps.setString(4, dueno.getTelefono());
-            ps.setString(5, dueno.getEmail());
-            ps.setString(6, dueno.getDireccion());
-            ps.setInt(7, dueno.getIdDueno());
+            cs = conn.prepareCall(sql);
+            cs.setInt(1, dueno.getIdDueno());
+            cs.setString(2, dueno.getDni());
+            cs.setString(3, dueno.getNombres());
+            cs.setString(4, dueno.getApellidos());
+            cs.setString(5, dueno.getTelefono());
+            cs.setString(6, dueno.getEmail());
+            cs.setString(7, dueno.getDireccion());
             
-            ps.executeUpdate();
+            cs.execute();
             return dueno;
         } finally {
-            cerrarRecursos(ps);
+            if (cs != null) cs.close();
         }
     }
     
     @Override
     public boolean eliminar(int id) throws SQLException {
-        String sql = "DELETE FROM dueno WHERE id_dueno = ?";
-        PreparedStatement ps = null;
-        
-        try {
-            Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, id);
-            
-            return ps.executeUpdate() > 0;
-        } finally {
-            cerrarRecursos(ps);
-        }
+        // No se implementa eliminación física por restricciones de integridad
+        return false;
     }
     
-    // Metodo especifico: Buscar por DNI
     public Dueno buscarPorDNI(String dni) throws SQLException {
-        String sql = "SELECT * FROM dueno WHERE dni = ?";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_buscar_dueno_por_dni(?)}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, dni);
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            cs.setString(1, dni);
+            rs = cs.executeQuery();
             
             if (rs.next()) {
                 return mapearDueno(rs);
             }
             return null;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
-    // Metodo especifico: Buscar por nombre
     public List<Dueno> buscarPorNombre(String nombre) throws SQLException {
-        String sql = "SELECT * FROM dueno WHERE CONCAT(nombres, ' ', apellidos) LIKE ? ORDER BY apellidos, nombres";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_buscar_dueno_por_nombre(?)}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         List<Dueno> duenos = new ArrayList<>();
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, "%" + nombre + "%");
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            cs.setString(1, nombre);
+            rs = cs.executeQuery();
             
             while (rs.next()) {
                 duenos.add(mapearDueno(rs));
             }
             return duenos;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
-    // Mapear ResultSet a Dueno
     private Dueno mapearDueno(ResultSet rs) throws SQLException {
         Dueno dueno = new Dueno();
         dueno.setIdDueno(rs.getInt("id_dueno"));
@@ -170,5 +158,14 @@ public class DuenoDAO extends GenericDAO<Dueno> {
         dueno.setDireccion(rs.getString("direccion"));
         dueno.setFechaRegistro(rs.getTimestamp("fecha_registro"));
         return dueno;
+    }
+    
+    private void cerrarRecursos(ResultSet rs, CallableStatement cs) {
+        try {
+            if (rs != null) rs.close();
+            if (cs != null) cs.close();
+        } catch (SQLException e) {
+            System.err.println("Error al cerrar recursos: " + e.getMessage());
+        }
     }
 }

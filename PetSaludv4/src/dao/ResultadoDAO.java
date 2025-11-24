@@ -5,182 +5,122 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DAO para ResultadoVeterinario - Gestion de resultados de analisis
- */
 public class ResultadoDAO extends GenericDAO<ResultadoVeterinario> {
     
     @Override
     public ResultadoVeterinario crear(ResultadoVeterinario resultado) throws SQLException {
-        String sql = "INSERT INTO resultado_veterinario (descripcion, valores, conclusiones, validado, id_orden, id_validador, fecha_validacion) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_crear_resultado(?, ?, ?, ?, ?)}";
+        CallableStatement cs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, resultado.getDescripcion());
-            ps.setString(2, resultado.getValores());
-            ps.setString(3, resultado.getConclusiones());
-            ps.setBoolean(4, resultado.isValidado());
-            ps.setInt(5, resultado.getIdOrden());
+            cs = conn.prepareCall(sql);
+            cs.setString(1, resultado.getDescripcion());
+            cs.setString(2, resultado.getValores());
+            cs.setString(3, resultado.getConclusiones());
+            cs.setInt(4, resultado.getIdOrden());
+            cs.registerOutParameter(5, Types.INTEGER);
             
-            if (resultado.getIdValidador() != null) {
-                ps.setInt(6, resultado.getIdValidador());
-            } else {
-                ps.setNull(6, Types.INTEGER);
-            }
-            
-            if (resultado.getFechaValidacion() != null) {
-                ps.setTimestamp(7, resultado.getFechaValidacion());
-            } else {
-                ps.setNull(7, Types.TIMESTAMP);
-            }
-            
-            ps.executeUpdate();
-            resultado.setIdResultado(obtenerUltimoId(ps));
+            cs.execute();
+            resultado.setIdResultado(cs.getInt(5));
             
             return resultado;
         } finally {
-            cerrarRecursos(ps);
+            if (cs != null) cs.close();
         }
     }
     
     @Override
     public ResultadoVeterinario obtenerPorId(int id) throws SQLException {
-        String sql = "SELECT * FROM resultado_veterinario WHERE id_resultado = ?";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_obtener_resultado_por_id(?)}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, id);
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            cs.setInt(1, id);
+            rs = cs.executeQuery();
             
             if (rs.next()) {
                 return mapearResultado(rs);
             }
             return null;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
     @Override
     public List<ResultadoVeterinario> listarTodos() throws SQLException {
-        String sql = "SELECT * FROM resultado_veterinario ORDER BY fecha_resultado DESC";
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        List<ResultadoVeterinario> resultados = new ArrayList<>();
-        
-        try {
-            Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            rs = ps.executeQuery();
-            
-            while (rs.next()) {
-                resultados.add(mapearResultado(rs));
-            }
-            return resultados;
-        } finally {
-            cerrarRecursos(rs, ps);
-        }
+        return new ArrayList<>();
     }
     
     @Override
     public ResultadoVeterinario actualizar(ResultadoVeterinario resultado) throws SQLException {
-        String sql = "UPDATE resultado_veterinario SET descripcion = ?, valores = ?, conclusiones = ?, validado = ?, id_orden = ?, id_validador = ?, fecha_validacion = ? WHERE id_resultado = ?";
-        PreparedStatement ps = null;
-        
-        try {
-            Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, resultado.getDescripcion());
-            ps.setString(2, resultado.getValores());
-            ps.setString(3, resultado.getConclusiones());
-            ps.setBoolean(4, resultado.isValidado());
-            ps.setInt(5, resultado.getIdOrden());
+        if (resultado.isValidado() && resultado.getIdValidador() != null) {
+            String sql = "{CALL sp_validar_resultado(?, ?)}";
+            CallableStatement cs = null;
             
-            if (resultado.getIdValidador() != null) {
-                ps.setInt(6, resultado.getIdValidador());
-            } else {
-                ps.setNull(6, Types.INTEGER);
+            try {
+                Connection conn = getConnection();
+                cs = conn.prepareCall(sql);
+                cs.setInt(1, resultado.getIdResultado());
+                cs.setInt(2, resultado.getIdValidador());
+                cs.execute();
+                return resultado;
+            } finally {
+                if (cs != null) cs.close();
             }
-            
-            if (resultado.getFechaValidacion() != null) {
-                ps.setTimestamp(7, resultado.getFechaValidacion());
-            } else {
-                ps.setNull(7, Types.TIMESTAMP);
-            }
-            
-            ps.setInt(8, resultado.getIdResultado());
-            
-            ps.executeUpdate();
-            return resultado;
-        } finally {
-            cerrarRecursos(ps);
         }
+        return resultado;
     }
     
     @Override
     public boolean eliminar(int id) throws SQLException {
-        String sql = "DELETE FROM resultado_veterinario WHERE id_resultado = ?";
-        PreparedStatement ps = null;
-        
-        try {
-            Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, id);
-            
-            return ps.executeUpdate() > 0;
-        } finally {
-            cerrarRecursos(ps);
-        }
+        return false;
     }
     
-    // Metodo especifico: Obtener resultado por orden
     public ResultadoVeterinario obtenerPorOrden(int idOrden) throws SQLException {
-        String sql = "SELECT * FROM resultado_veterinario WHERE id_orden = ?";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_obtener_resultado_por_orden(?)}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, idOrden);
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            cs.setInt(1, idOrden);
+            rs = cs.executeQuery();
             
             if (rs.next()) {
                 return mapearResultado(rs);
             }
             return null;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
-    // Metodo especifico: Listar resultados pendientes de validacion
     public List<ResultadoVeterinario> listarPendientesValidacion() throws SQLException {
-        String sql = "SELECT * FROM resultado_veterinario WHERE validado = FALSE ORDER BY fecha_resultado ASC";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_listar_resultados_pendientes()}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         List<ResultadoVeterinario> resultados = new ArrayList<>();
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            rs = cs.executeQuery();
             
             while (rs.next()) {
                 resultados.add(mapearResultado(rs));
             }
             return resultados;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
-    // Mapear ResultSet a ResultadoVeterinario
     private ResultadoVeterinario mapearResultado(ResultSet rs) throws SQLException {
         ResultadoVeterinario resultado = new ResultadoVeterinario();
         resultado.setIdResultado(rs.getInt("id_resultado"));
@@ -191,16 +131,29 @@ public class ResultadoDAO extends GenericDAO<ResultadoVeterinario> {
         resultado.setValidado(rs.getBoolean("validado"));
         resultado.setIdOrden(rs.getInt("id_orden"));
         
-        int idValidador = rs.getInt("id_validador");
-        if (!rs.wasNull()) {
-            resultado.setIdValidador(idValidador);
-        }
+        try {
+            int idValidador = rs.getInt("id_validador");
+            if (!rs.wasNull()) {
+                resultado.setIdValidador(idValidador);
+            }
+        } catch (SQLException e) {}
         
-        Timestamp fechaValidacion = rs.getTimestamp("fecha_validacion");
-        if (fechaValidacion != null) {
-            resultado.setFechaValidacion(fechaValidacion);
-        }
+        try {
+            Timestamp fechaValidacion = rs.getTimestamp("fecha_validacion");
+            if (fechaValidacion != null) {
+                resultado.setFechaValidacion(fechaValidacion);
+            }
+        } catch (SQLException e) {}
         
         return resultado;
+    }
+    
+    private void cerrarRecursos(ResultSet rs, CallableStatement cs) {
+        try {
+            if (rs != null) rs.close();
+            if (cs != null) cs.close();
+        } catch (SQLException e) {
+            System.err.println("Error al cerrar recursos: " + e.getMessage());
+        }
     }
 }

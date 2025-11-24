@@ -8,180 +8,140 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DAO para OrdenVeterinaria - Gestion de ordenes de analisis
+ * DAO para OrdenVeterinaria usando Procedimientos Almacenados
  */
 public class OrdenDAO extends GenericDAO<OrdenVeterinaria> {
     
     @Override
     public OrdenVeterinaria crear(OrdenVeterinaria orden) throws SQLException {
-        String sql = "INSERT INTO orden_veterinaria (tipo_examen, observaciones, estado, id_mascota, id_veterinario) VALUES (?, ?, ?, ?, ?)";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_crear_orden(?, ?, ?, ?, ?)}";
+        CallableStatement cs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, orden.getTipoExamen().name());
-            ps.setString(2, orden.getObservaciones());
-            ps.setString(3, orden.getEstado().name());
-            ps.setInt(4, orden.getIdMascota());
-            ps.setInt(5, orden.getIdVeterinario());
+            cs = conn.prepareCall(sql);
+            cs.setString(1, orden.getTipoExamen().name());
+            cs.setString(2, orden.getObservaciones());
+            cs.setInt(3, orden.getIdMascota());
+            cs.setInt(4, orden.getIdVeterinario());
+            cs.registerOutParameter(5, Types.INTEGER);
             
-            ps.executeUpdate();
-            orden.setIdOrden(obtenerUltimoId(ps));
+            cs.execute();
+            orden.setIdOrden(cs.getInt(5));
             
             return orden;
         } finally {
-            cerrarRecursos(ps);
+            if (cs != null) cs.close();
         }
     }
     
     @Override
     public OrdenVeterinaria obtenerPorId(int id) throws SQLException {
-        String sql = "SELECT * FROM orden_veterinaria WHERE id_orden = ?";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_obtener_orden_por_id(?)}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, id);
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            cs.setInt(1, id);
+            rs = cs.executeQuery();
             
             if (rs.next()) {
                 return mapearOrden(rs);
             }
             return null;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
     @Override
     public List<OrdenVeterinaria> listarTodos() throws SQLException {
-        String sql = "SELECT * FROM orden_veterinaria ORDER BY fecha_orden DESC";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_listar_todas_ordenes()}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         List<OrdenVeterinaria> ordenes = new ArrayList<>();
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            rs = cs.executeQuery();
             
             while (rs.next()) {
                 ordenes.add(mapearOrden(rs));
             }
             return ordenes;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
     @Override
     public OrdenVeterinaria actualizar(OrdenVeterinaria orden) throws SQLException {
-        String sql = "UPDATE orden_veterinaria SET tipo_examen = ?, observaciones = ?, estado = ?, id_mascota = ?, id_veterinario = ? WHERE id_orden = ?";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_actualizar_estado_orden(?, ?)}";
+        CallableStatement cs = null;
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, orden.getTipoExamen().name());
-            ps.setString(2, orden.getObservaciones());
-            ps.setString(3, orden.getEstado().name());
-            ps.setInt(4, orden.getIdMascota());
-            ps.setInt(5, orden.getIdVeterinario());
-            ps.setInt(6, orden.getIdOrden());
+            cs = conn.prepareCall(sql);
+            cs.setInt(1, orden.getIdOrden());
+            cs.setString(2, orden.getEstado().name());
             
-            ps.executeUpdate();
+            cs.execute();
             return orden;
         } finally {
-            cerrarRecursos(ps);
+            if (cs != null) cs.close();
         }
     }
     
     @Override
     public boolean eliminar(int id) throws SQLException {
-        String sql = "DELETE FROM orden_veterinaria WHERE id_orden = ?";
-        PreparedStatement ps = null;
-        
-        try {
-            Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, id);
-            
-            return ps.executeUpdate() > 0;
-        } finally {
-            cerrarRecursos(ps);
-        }
+        return false;
     }
     
-    // Metodo especifico: Listar por estado
     public List<OrdenVeterinaria> listarPorEstado(EstadoOrden estado) throws SQLException {
-        String sql = "SELECT * FROM orden_veterinaria WHERE estado = ? ORDER BY fecha_orden DESC";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_listar_ordenes_por_estado(?)}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         List<OrdenVeterinaria> ordenes = new ArrayList<>();
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, estado.name());
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            cs.setString(1, estado.name());
+            rs = cs.executeQuery();
             
             while (rs.next()) {
                 ordenes.add(mapearOrden(rs));
             }
             return ordenes;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
-    // Metodo especifico: Listar por mascota
     public List<OrdenVeterinaria> listarPorMascota(int idMascota) throws SQLException {
-        String sql = "SELECT * FROM orden_veterinaria WHERE id_mascota = ? ORDER BY fecha_orden DESC";
-        PreparedStatement ps = null;
+        String sql = "{CALL sp_listar_ordenes_por_mascota(?)}";
+        CallableStatement cs = null;
         ResultSet rs = null;
         List<OrdenVeterinaria> ordenes = new ArrayList<>();
         
         try {
             Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, idMascota);
-            rs = ps.executeQuery();
+            cs = conn.prepareCall(sql);
+            cs.setInt(1, idMascota);
+            rs = cs.executeQuery();
             
             while (rs.next()) {
                 ordenes.add(mapearOrden(rs));
             }
             return ordenes;
         } finally {
-            cerrarRecursos(rs, ps);
+            cerrarRecursos(rs, cs);
         }
     }
     
-    // Metodo especifico: Listar por veterinario
-    public List<OrdenVeterinaria> listarPorVeterinario(int idVeterinario) throws SQLException {
-        String sql = "SELECT * FROM orden_veterinaria WHERE id_veterinario = ? ORDER BY fecha_orden DESC";
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        List<OrdenVeterinaria> ordenes = new ArrayList<>();
-        
-        try {
-            Connection conn = getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, idVeterinario);
-            rs = ps.executeQuery();
-            
-            while (rs.next()) {
-                ordenes.add(mapearOrden(rs));
-            }
-            return ordenes;
-        } finally {
-            cerrarRecursos(rs, ps);
-        }
-    }
-    
-    // Mapear ResultSet a OrdenVeterinaria
     private OrdenVeterinaria mapearOrden(ResultSet rs) throws SQLException {
         OrdenVeterinaria orden = new OrdenVeterinaria();
         orden.setIdOrden(rs.getInt("id_orden"));
@@ -193,5 +153,14 @@ public class OrdenDAO extends GenericDAO<OrdenVeterinaria> {
         orden.setIdVeterinario(rs.getInt("id_veterinario"));
         orden.setFechaActualizacion(rs.getTimestamp("fecha_actualizacion"));
         return orden;
+    }
+    
+    private void cerrarRecursos(ResultSet rs, CallableStatement cs) {
+        try {
+            if (rs != null) rs.close();
+            if (cs != null) cs.close();
+        } catch (SQLException e) {
+            System.err.println("Error al cerrar recursos: " + e.getMessage());
+        }
     }
 }
