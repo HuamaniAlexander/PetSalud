@@ -1,16 +1,9 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package gof.estructural.bridge;
 
 import java.util.List;
 
-// Abstraccion refinada: Reporte de laboratorio
 public class ReporteLaboratorio extends GeneradorReporte {
     private List<String> analisis;
-    private String periodo;
-    private String contenido;
     
     public ReporteLaboratorio(IFormatoReporte formato) {
         super(formato);
@@ -20,23 +13,19 @@ public class ReporteLaboratorio extends GeneradorReporte {
         this.analisis = analisis;
     }
     
-    public void setPeriodo(String periodo) {
-        this.periodo = periodo;
-    }
-    
-    public void setContenido(String contenido) {
-        this.contenido = contenido;
-    }
-    
     @Override
     protected String prepararContenido() {
-        if (contenido != null && !contenido.isEmpty()) {
-            return contenido;
+        // Si hay contenido personalizado, usarlo
+        if (contenidoTexto != null && !contenidoTexto.isEmpty()) {
+            return contenidoTexto;
         }
         
+        // Si no, generar contenido por defecto
         StringBuilder sb = new StringBuilder();
         sb.append("REPORTE DE LABORATORIO\n");
-        sb.append("Período: ").append(periodo != null ? periodo : "No especificado").append("\n\n");
+        if (periodo != null) {
+            sb.append("Período: ").append(periodo).append("\n\n");
+        }
         
         if (analisis != null && !analisis.isEmpty()) {
             sb.append("Análisis realizados:\n");

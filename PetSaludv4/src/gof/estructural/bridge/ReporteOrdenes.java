@@ -1,13 +1,9 @@
 package gof.estructural.bridge;
 
-import java.util.List;
-
 public class ReporteOrdenes extends GeneradorReporte {
     private int totalOrdenes;
     private int pendientes;
     private int completadas;
-    private String periodo;
-    private String contenido;
     
     public ReporteOrdenes(IFormatoReporte formato) {
         super(formato);
@@ -25,23 +21,19 @@ public class ReporteOrdenes extends GeneradorReporte {
         this.completadas = completadas;
     }
     
-    public void setPeriodo(String periodo) {
-        this.periodo = periodo;
-    }
-    
-    public void setContenido(String contenido) {
-        this.contenido = contenido;
-    }
-    
     @Override
     protected String prepararContenido() {
-        if (contenido != null && !contenido.isEmpty()) {
-            return contenido;
+        // Si hay contenido personalizado, usarlo
+        if (contenidoTexto != null && !contenidoTexto.isEmpty()) {
+            return contenidoTexto;
         }
         
+        // Si no, generar contenido por defecto
         StringBuilder sb = new StringBuilder();
         sb.append("REPORTE DE ÓRDENES VETERINARIAS\n");
-        sb.append("Período: ").append(periodo != null ? periodo : "No especificado").append("\n\n");
+        if (periodo != null) {
+            sb.append("Período: ").append(periodo).append("\n\n");
+        }
         sb.append("Total de Órdenes: ").append(totalOrdenes).append("\n");
         sb.append("Pendientes: ").append(pendientes).append("\n");
         sb.append("Completadas: ").append(completadas).append("\n");
@@ -56,6 +48,6 @@ public class ReporteOrdenes extends GeneradorReporte {
     
     @Override
     protected String obtenerTitulo() {
-        return "Reporte de Ordenes - PetSalud";
+        return "Reporte de Órdenes - PetSalud";
     }
 }

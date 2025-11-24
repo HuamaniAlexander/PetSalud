@@ -1,19 +1,18 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package gof.estructural.bridge;
 
-
-// Abstraccion: Generador de reportes
+/**
+ * Abstracción: Generador de reportes
+ */
 public abstract class GeneradorReporte {
     protected IFormatoReporte formato;
+    protected String contenidoTexto;
+    protected String periodo;
     
     public GeneradorReporte(IFormatoReporte formato) {
         this.formato = formato;
     }
     
-    // Metodo template para generar reporte
+    // Método template para generar reporte
     public String generar() {
         String contenido = prepararContenido();
         String titulo = obtenerTitulo();
@@ -32,7 +31,16 @@ public abstract class GeneradorReporte {
         return formato.getExtension();
     }
     
-    // Metodos abstractos que subclases deben implementar
+    // Setters para contenido personalizado
+    public void setContenido(String contenido) {
+        this.contenidoTexto = contenido;
+    }
+    
+    public void setPeriodo(String periodo) {
+        this.periodo = periodo;
+    }
+    
+    // Métodos abstractos que subclases deben implementar
     protected abstract String prepararContenido();
     protected abstract String obtenerTitulo();
 }
