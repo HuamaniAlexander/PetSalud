@@ -15,6 +15,7 @@ public class PanelResultado extends JPanel {
     private static final Color COLOR_CARD = new Color(255, 255, 255);
     private static final Color COLOR_BACKGROUND = new Color(248, 249, 250);
     private static final Color COLOR_BORDER = new Color(224, 224, 224);
+    private static final Color COLOR_TEXT = new Color(33, 33, 33);
     
     private ControladorModulos controlador;
     
@@ -27,9 +28,9 @@ public class PanelResultado extends JPanel {
         tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 13));
         tabbedPane.setBackground(COLOR_CARD);
         
-        tabbedPane.addTab("➕ Registrar Resultado", crearPanelRegistrarResultado());
-        tabbedPane.addTab("✅ Validar Resultados", crearPanelValidarResultados());
-        tabbedPane.addTab("🔍 Consultar Resultados", crearPanelConsultarResultados());
+        tabbedPane.addTab("\u2795 Registrar Resultado", crearPanelRegistrarResultado());
+        tabbedPane.addTab("\u2705 Validar Resultados", crearPanelValidarResultados());
+        tabbedPane.addTab("\uD83D\uDD0D Consultar Resultados", crearPanelConsultarResultados());
         
         add(tabbedPane, BorderLayout.CENTER);
     }
@@ -50,27 +51,28 @@ public class PanelResultado extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(10, 10, 10, 10);
         
-        // Campos
         JTextField txtIdOrden = crearCampoTexto();
         JTextArea txtDescripcion = new JTextArea(4, 20);
         txtDescripcion.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         txtDescripcion.setLineWrap(true);
         txtDescripcion.setWrapStyleWord(true);
         JScrollPane scrollDesc = new JScrollPane(txtDescripcion);
+        scrollDesc.setPreferredSize(new Dimension(300, 100));
         
         JTextArea txtValores = new JTextArea(4, 20);
         txtValores.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         txtValores.setLineWrap(true);
         txtValores.setWrapStyleWord(true);
         JScrollPane scrollVal = new JScrollPane(txtValores);
+        scrollVal.setPreferredSize(new Dimension(300, 100));
         
         JTextArea txtConclusiones = new JTextArea(4, 20);
         txtConclusiones.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         txtConclusiones.setLineWrap(true);
         txtConclusiones.setWrapStyleWord(true);
         JScrollPane scrollConc = new JScrollPane(txtConclusiones);
+        scrollConc.setPreferredSize(new Dimension(300, 100));
         
-        // Layout
         int fila = 0;
         
         gbc.gridx = 0; gbc.gridy = fila;
@@ -80,7 +82,7 @@ public class PanelResultado extends JPanel {
         
         fila++;
         gbc.gridx = 0; gbc.gridy = fila; gbc.gridwidth = 1;
-        panelFormulario.add(crearEtiqueta("Descripción *"), gbc);
+        panelFormulario.add(crearEtiqueta("Descripcion *"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
         panelFormulario.add(scrollDesc, gbc);
         
@@ -96,14 +98,13 @@ public class PanelResultado extends JPanel {
         gbc.gridx = 1; gbc.gridwidth = 2;
         panelFormulario.add(scrollConc, gbc);
         
-        // Botones
         fila++;
         gbc.gridx = 0; gbc.gridy = fila; gbc.gridwidth = 3;
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
         panelBotones.setBackground(COLOR_CARD);
         
-        JButton btnRegistrar = crearBoton("✓ Registrar Resultado", COLOR_PRIMARY);
-        JButton btnLimpiar = crearBoton("✗ Limpiar", new Color(158, 158, 158));
+        JButton btnRegistrar = crearBoton("\u2713 Registrar Resultado", COLOR_PRIMARY);
+        JButton btnLimpiar = crearBoton("\u2717 Limpiar", new Color(158, 158, 158));
         
         btnRegistrar.addActionListener(e -> {
             try {
@@ -111,6 +112,11 @@ public class PanelResultado extends JPanel {
                 String descripcion = txtDescripcion.getText().trim();
                 String valores = txtValores.getText().trim();
                 String conclusiones = txtConclusiones.getText().trim();
+                
+                if (descripcion.isEmpty() || valores.isEmpty()) {
+                    mostrarMensajeError("Complete los campos obligatorios");
+                    return;
+                }
                 
                 boolean resultado = controlador.registrarResultado(idOrden, descripcion, valores, conclusiones);
                 
@@ -124,7 +130,7 @@ public class PanelResultado extends JPanel {
                     mostrarMensajeError("Error al registrar resultado");
                 }
             } catch (NumberFormatException ex) {
-                mostrarMensajeError("ID de orden debe ser un número válido");
+                mostrarMensajeError("ID de orden debe ser un numero valido");
             }
         });
         
@@ -139,7 +145,6 @@ public class PanelResultado extends JPanel {
         panelBotones.add(btnLimpiar);
         panelFormulario.add(panelBotones, gbc);
         
-        // Centrar formulario
         JPanel panelCentrado = new JPanel(new GridBagLayout());
         panelCentrado.setBackground(COLOR_BACKGROUND);
         panelCentrado.add(panelFormulario);
@@ -153,7 +158,6 @@ public class PanelResultado extends JPanel {
         panelPrincipal.setBackground(COLOR_BACKGROUND);
         panelPrincipal.setBorder(new EmptyBorder(20, 20, 20, 20));
         
-        // Panel superior
         JPanel panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
         panelSuperior.setBackground(COLOR_CARD);
         panelSuperior.setBorder(BorderFactory.createCompoundBorder(
@@ -161,17 +165,16 @@ public class PanelResultado extends JPanel {
             new EmptyBorder(15, 20, 15, 20)
         ));
         
-        JLabel lblInfo = new JLabel("✅ Resultados pendientes de validación");
-        lblInfo.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        JLabel lblInfo = new JLabel("\u2705 Resultados pendientes de validacion");
+        lblInfo.setFont(new Font("Segoe UI Emoji", Font.BOLD, 14));
         lblInfo.setForeground(COLOR_SUCCESS);
         
-        JButton btnActualizar = crearBoton("🔄 Actualizar", COLOR_PRIMARY);
+        JButton btnActualizar = crearBoton("\uD83D\uDD04 Actualizar", COLOR_PRIMARY);
         
         panelSuperior.add(lblInfo);
         panelSuperior.add(btnActualizar);
         
-        // Tabla
-        String[] columnas = {"ID Resultado", "ID Orden", "Descripción", "Fecha", "Validado"};
+        String[] columnas = {"ID Resultado", "ID Orden", "Descripcion", "Fecha", "Validado"};
         DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -189,7 +192,6 @@ public class PanelResultado extends JPanel {
         JScrollPane scrollPane = new JScrollPane(tabla);
         scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1, true));
         
-        // Panel acciones
         JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         panelAcciones.setBackground(COLOR_CARD);
         panelAcciones.setBorder(BorderFactory.createCompoundBorder(
@@ -201,7 +203,7 @@ public class PanelResultado extends JPanel {
         JTextField txtIdVet = crearCampoTexto();
         txtIdVet.setPreferredSize(new Dimension(150, 35));
         
-        JButton btnValidar = crearBoton("✅ Validar Resultado", COLOR_SUCCESS);
+        JButton btnValidar = crearBoton("\u2705 Validar Resultado", COLOR_SUCCESS);
         
         btnValidar.addActionListener(e -> {
             int filaSeleccionada = tabla.getSelectedRow();
@@ -214,11 +216,12 @@ public class PanelResultado extends JPanel {
                     if (resultado) {
                         mostrarMensajeExito("Resultado validado exitosamente");
                         btnActualizar.doClick();
+                        txtIdVet.setText("");
                     } else {
                         mostrarMensajeError("Error al validar resultado");
                     }
                 } catch (NumberFormatException ex) {
-                    mostrarMensajeError("ID de veterinario debe ser un número válido");
+                    mostrarMensajeError("ID de veterinario debe ser un numero valido");
                 }
             } else {
                 mostrarMensajeInfo("Seleccione un resultado");
@@ -234,18 +237,20 @@ public class PanelResultado extends JPanel {
             modelo.setRowCount(0);
             if (resultados != null) {
                 for (ResultadoVeterinario r : resultados) {
+                    String descripcionCorta = r.getDescripcion().length() > 50 
+                        ? r.getDescripcion().substring(0, 50) + "..." 
+                        : r.getDescripcion();
                     modelo.addRow(new Object[]{
                         r.getIdResultado(),
                         r.getIdOrden(),
-                        r.getDescripcion().substring(0, Math.min(50, r.getDescripcion().length())) + "...",
+                        descripcionCorta,
                         r.getFechaResultado(),
-                        r.isValidado() ? "✓" : "✗"
+                        r.isValidado() ? "\u2713" : "\u2717"
                     });
                 }
             }
         });
         
-        // Cargar datos iniciales
         btnActualizar.doClick();
         
         panelPrincipal.add(panelSuperior, BorderLayout.NORTH);
@@ -256,25 +261,56 @@ public class PanelResultado extends JPanel {
     }
     
     private JPanel crearPanelConsultarResultados() {
-        JPanel panelPrincipal = new JPanel(new BorderLayout());
+        JPanel panelPrincipal = new JPanel(new BorderLayout(15, 15));
         panelPrincipal.setBackground(COLOR_BACKGROUND);
         panelPrincipal.setBorder(new EmptyBorder(20, 20, 20, 20));
         
-        JLabel lblInfo = new JLabel("🔍 Consulta de resultados por orden", SwingConstants.CENTER);
-        lblInfo.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblInfo.setForeground(COLOR_SECONDARY);
-        lblInfo.setBorder(new EmptyBorder(20, 20, 20, 20));
+        JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        panelBusqueda.setBackground(COLOR_CARD);
+        panelBusqueda.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(COLOR_BORDER, 1, true),
+            new EmptyBorder(15, 20, 15, 20)
+        ));
         
-        panelPrincipal.add(lblInfo, BorderLayout.CENTER);
+        JLabel lblIdOrden = crearEtiqueta("ID Orden:");
+        JTextField txtIdOrden = crearCampoTexto();
+        txtIdOrden.setPreferredSize(new Dimension(150, 35));
+        
+        JButton btnBuscar = crearBoton("\uD83D\uDD0D Consultar", COLOR_SECONDARY);
+        
+        panelBusqueda.add(lblIdOrden);
+        panelBusqueda.add(txtIdOrden);
+        panelBusqueda.add(btnBuscar);
+        
+        JTextArea txtResultado = new JTextArea();
+        txtResultado.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        txtResultado.setEditable(false);
+        txtResultado.setLineWrap(true);
+        txtResultado.setWrapStyleWord(true);
+        
+        JScrollPane scrollPane = new JScrollPane(txtResultado);
+        scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1, true));
+        
+        btnBuscar.addActionListener(e -> {
+            try {
+                int idOrden = Integer.parseInt(txtIdOrden.getText().trim());
+                String historial = controlador.obtenerHistorialMascota(idOrden);
+                txtResultado.setText(historial);
+            } catch (NumberFormatException ex) {
+                mostrarMensajeError("ID de orden invalido");
+            }
+        });
+        
+        panelPrincipal.add(panelBusqueda, BorderLayout.NORTH);
+        panelPrincipal.add(scrollPane, BorderLayout.CENTER);
         
         return panelPrincipal;
     }
     
-    // Métodos auxiliares
     private JLabel crearEtiqueta(String texto) {
         JLabel lbl = new JLabel(texto);
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lbl.setForeground(new Color(33, 33, 33));
+        lbl.setForeground(COLOR_TEXT);
         return lbl;
     }
     
@@ -287,7 +323,7 @@ public class PanelResultado extends JPanel {
     
     private JButton crearBoton(String texto, Color color) {
         JButton btn = new JButton(texto);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setFont(new Font("Segoe UI Emoji", Font.BOLD, 13));
         btn.setForeground(Color.WHITE);
         btn.setBackground(color);
         btn.setFocusPainted(false);
@@ -298,7 +334,7 @@ public class PanelResultado extends JPanel {
     }
     
     private void mostrarMensajeExito(String mensaje) {
-        JOptionPane.showMessageDialog(this, mensaje, "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, mensaje, "Exito", JOptionPane.INFORMATION_MESSAGE);
     }
     
     private void mostrarMensajeError(String mensaje) {
@@ -306,6 +342,17 @@ public class PanelResultado extends JPanel {
     }
     
     private void mostrarMensajeInfo(String mensaje) {
-        JOptionPane.showMessageDialog(this, mensaje, "Información", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, mensaje, "Informacion", JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    // main para testing
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Test Panel Resultado");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+            frame.add(new PanelResultado());
+            frame.setVisible(true);
+        });
     }
 }

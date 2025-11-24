@@ -3,19 +3,20 @@ import vista.LoginFrame;
 import javax.swing.*;
 
 /**
- * Clase principal - Punto de entrada del sistema
+ * Clase principal - punto de entrada del sistema
+ * Sistema de Gestion Veterinaria PetSalud
  */
 public class Main {
     
     public static void main(String[] args) {
-        // Configurar Look and Feel del sistema
+        // configurar look and feel del sistema
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             System.err.println("No se pudo configurar Look and Feel: " + e.getMessage());
         }
         
-        // Probar conexion a base de datos
+        // probar conexion a base de datos
         System.out.println("=== SISTEMA VETERINARIO PETSALUD ===");
         System.out.println("Iniciando sistema...");
         
@@ -25,7 +26,7 @@ public class Main {
             if (gestor.probarConexion()) {
                 System.out.println("Conexion a base de datos: OK");
                 
-                // Iniciar interfaz grafica
+                // iniciar interfaz grafica
                 SwingUtilities.invokeLater(() -> {
                     LoginFrame loginFrame = new LoginFrame();
                     loginFrame.setVisible(true);

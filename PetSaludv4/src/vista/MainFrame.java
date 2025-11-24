@@ -10,20 +10,16 @@ import java.awt.*;
 import java.sql.SQLException;
 import java.util.Map;
 
-/**
- * Dashboard Principal Moderno - Diseño Veterinario
- */
 public class MainFrame extends JFrame {
-    // Colores del tema veterinario
-    private static final Color COLOR_PRIMARY = new Color(52, 168, 83);      // Verde veterinario
-    private static final Color COLOR_SECONDARY = new Color(66, 133, 244);   // Azul suave
-    private static final Color COLOR_ACCENT = new Color(251, 188, 5);       // Amarillo/dorado
-    private static final Color COLOR_BACKGROUND = new Color(248, 249, 250); // Gris muy claro
-    private static final Color COLOR_SIDEBAR = new Color(46, 125, 50);      // Verde oscuro
-    private static final Color COLOR_TEXT = new Color(33, 33, 33);          // Negro suave
-    private static final Color COLOR_TEXT_LIGHT = new Color(255, 255, 255); // Blanco
-    private static final Color COLOR_CARD = new Color(255, 255, 255);       // Blanco
-    private static final Color COLOR_BORDER = new Color(224, 224, 224);     // Gris borde
+    private static final Color COLOR_PRIMARY = new Color(52, 168, 83);
+    private static final Color COLOR_SECONDARY = new Color(66, 133, 244);
+    private static final Color COLOR_ACCENT = new Color(251, 188, 5);
+    private static final Color COLOR_BACKGROUND = new Color(248, 249, 250);
+    private static final Color COLOR_SIDEBAR = new Color(46, 125, 50);
+    private static final Color COLOR_TEXT = new Color(33, 33, 33);
+    private static final Color COLOR_TEXT_LIGHT = new Color(255, 255, 255);
+    private static final Color COLOR_CARD = new Color(255, 255, 255);
+    private static final Color COLOR_BORDER = new Color(224, 224, 224);
     
     private Usuario usuario;
     private ServicioAutenticacion servicioAuth;
@@ -41,22 +37,15 @@ public class MainFrame extends JFrame {
     }
     
     private void inicializarComponentes() {
-        // Configuración ventana
         setTitle("Sistema Veterinario PetSalud");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setExtendedState(JFrame.MAXIMIZED_BOTH); // Pantalla completa
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setMinimumSize(new Dimension(1280, 720));
         
-        // Layout principal
         setLayout(new BorderLayout());
         
-        // Crear sidebar
         crearSidebar();
-        
-        // Crear área de contenido
         crearAreaContenido();
-        
-        // Mostrar dashboard inicial
         mostrarDashboard();
     }
     
@@ -66,14 +55,14 @@ public class MainFrame extends JFrame {
         panelSidebar.setBackground(COLOR_SIDEBAR);
         panelSidebar.setPreferredSize(new Dimension(250, getHeight()));
         
-        // Logo y título
+        // logo y titulo
         JPanel panelLogo = new JPanel();
         panelLogo.setLayout(new BoxLayout(panelLogo, BoxLayout.Y_AXIS));
         panelLogo.setBackground(COLOR_SIDEBAR);
         panelLogo.setBorder(new EmptyBorder(20, 20, 20, 20));
         
-        JLabel lblLogo = new JLabel("🐾 PetSalud");
-        lblLogo.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        JLabel lblLogo = new JLabel("\uD83D\uDC3E PetSalud");
+        lblLogo.setFont(new Font("Segoe UI Emoji", Font.BOLD, 24));
         lblLogo.setForeground(COLOR_TEXT_LIGHT);
         lblLogo.setAlignmentX(Component.LEFT_ALIGNMENT);
         
@@ -89,15 +78,15 @@ public class MainFrame extends JFrame {
         panelSidebar.add(panelLogo);
         panelSidebar.add(Box.createVerticalStrut(10));
         
-        // Información del usuario
+        // info del usuario
         JPanel panelUsuario = new JPanel();
         panelUsuario.setLayout(new BoxLayout(panelUsuario, BoxLayout.Y_AXIS));
         panelUsuario.setBackground(new Color(56, 142, 60));
         panelUsuario.setBorder(new EmptyBorder(15, 20, 15, 20));
         panelUsuario.setMaximumSize(new Dimension(250, 80));
         
-        JLabel lblUsuario = new JLabel("👤 " + usuario.getNombreUsuario());
-        lblUsuario.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        JLabel lblUsuario = new JLabel("\uD83D\uDC64 " + usuario.getNombreUsuario());
+        lblUsuario.setFont(new Font("Segoe UI Emoji", Font.BOLD, 14));
         lblUsuario.setForeground(COLOR_TEXT_LIGHT);
         lblUsuario.setAlignmentX(Component.LEFT_ALIGNMENT);
         
@@ -113,37 +102,37 @@ public class MainFrame extends JFrame {
         panelSidebar.add(panelUsuario);
         panelSidebar.add(Box.createVerticalStrut(20));
         
-        // Menú de navegación
-        agregarItemMenu("🏠 Dashboard", e -> mostrarDashboard(), true);
+        // menu de navegacion
+        agregarItemMenu("\uD83C\uDFE0 Dashboard", e -> mostrarDashboard(), true);
         
         switch (usuario.getRol()) {
             case ADMIN:
-                agregarItemMenu("👥 Usuarios", e -> mostrarPanel(new PanelUsuarios()), false);
-                agregarItemMenu("👨‍⚕️ Personal", e -> mostrarPanel(new PanelPersonal()), false);
-                agregarItemMenu("🐕 Dueños y Mascotas", e -> mostrarPanel(new PanelDuenoMascota()), false);
-                agregarItemMenu("📋 Órdenes", e -> mostrarPanel(new PanelOrdenLaboratorio()), false);
-                agregarItemMenu("📊 Reportes", e -> mostrarPanel(new PanelReportes()), false);
+                agregarItemMenu("\uD83D\uDC65 Usuarios", e -> mostrarPanel(new PanelUsuarios()), false);
+                agregarItemMenu("\uD83D\uDC68\u200D\u2695 Personal", e -> mostrarPanel(new PanelPersonal()), false);
+                agregarItemMenu("\uD83D\uDC15 Duenos y Mascotas", e -> mostrarPanel(new PanelDuenoMascota()), false);
+                agregarItemMenu("\uD83D\uDCCB Ordenes", e -> mostrarPanel(new PanelOrdenLaboratorio()), false);
+                agregarItemMenu("\uD83D\uDCC8 Reportes", e -> mostrarPanel(new PanelReportes()), false);
                 break;
             case VETERINARIO:
-                agregarItemMenu("🐕 Pacientes", e -> mostrarPanel(new PanelDuenoMascota()), false);
-                agregarItemMenu("📋 Órdenes", e -> mostrarPanel(new PanelOrdenLaboratorio()), false);
-                agregarItemMenu("🔬 Resultados", e -> mostrarPanel(new PanelResultado()), false);
+                agregarItemMenu("\uD83D\uDC15 Pacientes", e -> mostrarPanel(new PanelDuenoMascota()), false);
+                agregarItemMenu("\uD83D\uDCCB Ordenes", e -> mostrarPanel(new PanelOrdenLaboratorio()), false);
+                agregarItemMenu("\uD83D\uDD2C Resultados", e -> mostrarPanel(new PanelResultado()), false);
                 break;
             case TECNICO:
-                agregarItemMenu("🔬 Laboratorio", e -> mostrarPanel(new PanelOrdenLaboratorio()), false);
-                agregarItemMenu("📋 Mis Análisis", e -> mostrarPanel(new PanelResultado()), false);
+                agregarItemMenu("\uD83D\uDD2C Laboratorio", e -> mostrarPanel(new PanelOrdenLaboratorio()), false);
+                agregarItemMenu("\uD83D\uDCCB Mis Analisis", e -> mostrarPanel(new PanelResultado()), false);
                 break;
             case RECEPCIONISTA:
-                agregarItemMenu("🐕 Registro", e -> mostrarPanel(new PanelDuenoMascota()), false);
-                agregarItemMenu("📋 Órdenes", e -> mostrarPanel(new PanelOrdenLaboratorio()), false);
-                agregarItemMenu("💰 Facturación", e -> mostrarPanel(new PanelFacturacion()), false);
+                agregarItemMenu("\uD83D\uDC15 Registro", e -> mostrarPanel(new PanelDuenoMascota()), false);
+                agregarItemMenu("\uD83D\uDCCB Ordenes", e -> mostrarPanel(new PanelOrdenLaboratorio()), false);
+                agregarItemMenu("\uD83D\uDCB0 Facturacion", e -> mostrarPanel(new PanelFacturacion()), false);
                 break;
         }
         
         panelSidebar.add(Box.createVerticalGlue());
         
-        // Botón cerrar sesión
-        JButton btnCerrarSesion = crearBotonSidebar("🚪 Cerrar Sesión");
+        // boton cerrar sesion
+        JButton btnCerrarSesion = crearBotonSidebar("\uD83D\uDEAA Cerrar Sesion");
         btnCerrarSesion.setBackground(new Color(244, 67, 54));
         btnCerrarSesion.addActionListener(e -> cerrarSesion());
         panelSidebar.add(btnCerrarSesion);
@@ -164,7 +153,7 @@ public class MainFrame extends JFrame {
     
     private JButton crearBotonSidebar(String texto) {
         JButton btn = new JButton(texto);
-        btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        btn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 13));
         btn.setForeground(COLOR_TEXT_LIGHT);
         btn.setBackground(COLOR_SIDEBAR);
         btn.setFocusPainted(false);
@@ -197,7 +186,7 @@ public class MainFrame extends JFrame {
         JPanel panelPrincipal = new JPanel(new BorderLayout());
         panelPrincipal.setBackground(COLOR_BACKGROUND);
         
-        // Header
+        // header
         JPanel panelHeader = new JPanel(new BorderLayout());
         panelHeader.setBackground(COLOR_CARD);
         panelHeader.setBorder(BorderFactory.createCompoundBorder(
@@ -216,7 +205,7 @@ public class MainFrame extends JFrame {
         panelHeader.add(lblTituloModulo, BorderLayout.WEST);
         panelHeader.add(lblFecha, BorderLayout.EAST);
         
-        // Contenido
+        // contenido
         panelContenido = new JPanel(new BorderLayout());
         panelContenido.setBackground(COLOR_BACKGROUND);
         panelContenido.setBorder(new EmptyBorder(20, 30, 20, 30));
@@ -238,21 +227,21 @@ public class MainFrame extends JFrame {
             EstadisticasDAO estadisticasDAO = new EstadisticasDAO();
             Map<String, Integer> stats = estadisticasDAO.obtenerEstadisticasDashboard();
             
-            dashboard.add(crearTarjetaEstadistica("👥 Total Dueños", 
+            dashboard.add(crearTarjetaEstadistica("\uD83D\uDC65 Total Duenos", 
                 String.valueOf(stats.get("total_duenos")), COLOR_PRIMARY));
-            dashboard.add(crearTarjetaEstadistica("🐕 Total Mascotas", 
+            dashboard.add(crearTarjetaEstadistica("\uD83D\uDC15 Total Mascotas", 
                 String.valueOf(stats.get("total_mascotas")), COLOR_SECONDARY));
-            dashboard.add(crearTarjetaEstadistica("📋 Órdenes Pendientes", 
+            dashboard.add(crearTarjetaEstadistica("\uD83D\uDCCB Ordenes Pendientes", 
                 String.valueOf(stats.get("ordenes_pendientes")), COLOR_ACCENT));
-            dashboard.add(crearTarjetaEstadistica("⏳ En Proceso", 
+            dashboard.add(crearTarjetaEstadistica("\u23F3 En Proceso", 
                 String.valueOf(stats.get("ordenes_en_proceso")), new Color(156, 39, 176)));
-            dashboard.add(crearTarjetaEstadistica("✅ Resultados Pendientes", 
+            dashboard.add(crearTarjetaEstadistica("\u2705 Resultados Pendientes", 
                 String.valueOf(stats.get("resultados_pendientes")), new Color(255, 87, 34)));
-            dashboard.add(crearTarjetaEstadistica("📅 Órdenes Hoy", 
+            dashboard.add(crearTarjetaEstadistica("\uD83D\uDCC5 Ordenes Hoy", 
                 String.valueOf(stats.get("ordenes_hoy")), new Color(0, 150, 136)));
             
         } catch (SQLException e) {
-            JLabel lblError = new JLabel("Error al cargar estadísticas: " + e.getMessage());
+            JLabel lblError = new JLabel("Error al cargar estadisticas: " + e.getMessage());
             lblError.setForeground(Color.RED);
             dashboard.add(lblError);
         }
@@ -272,7 +261,7 @@ public class MainFrame extends JFrame {
         ));
         
         JLabel lblTitulo = new JLabel(titulo);
-        lblTitulo.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        lblTitulo.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 15));
         lblTitulo.setForeground(new Color(117, 117, 117));
         lblTitulo.setAlignmentX(Component.LEFT_ALIGNMENT);
         
@@ -289,15 +278,27 @@ public class MainFrame extends JFrame {
     }
     
     private void mostrarPanel(JPanel panel) {
+        lblTituloModulo.setText(obtenerTituloPanel(panel));
         panelContenido.removeAll();
         panelContenido.add(panel, BorderLayout.CENTER);
         panelContenido.revalidate();
         panelContenido.repaint();
     }
     
+    private String obtenerTituloPanel(JPanel panel) {
+        if (panel instanceof PanelUsuarios) return "Gestion de Usuarios";
+        if (panel instanceof PanelPersonal) return "Gestion de Personal";
+        if (panel instanceof PanelDuenoMascota) return "Duenos y Mascotas";
+        if (panel instanceof PanelOrdenLaboratorio) return "Ordenes de Laboratorio";
+        if (panel instanceof PanelResultado) return "Resultados";
+        if (panel instanceof PanelReportes) return "Reportes y Estadisticas";
+        if (panel instanceof PanelFacturacion) return "Facturacion";
+        return "Modulo";
+    }
+    
     private void cerrarSesion() {
         int confirm = JOptionPane.showConfirmDialog(this, 
-            "¿Desea cerrar sesión?", 
+            "Desea cerrar sesion?", 
             "Confirmar", 
             JOptionPane.YES_NO_OPTION);
         
@@ -308,4 +309,7 @@ public class MainFrame extends JFrame {
             dispose();
         }
     }
+    
+    
+    
 }

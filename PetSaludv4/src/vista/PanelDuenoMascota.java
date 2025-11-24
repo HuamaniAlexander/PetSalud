@@ -9,15 +9,13 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 
-/**
- * Panel moderno para gestión de Dueños y Mascotas
- */
 public class PanelDuenoMascota extends JPanel {
     private static final Color COLOR_PRIMARY = new Color(52, 168, 83);
     private static final Color COLOR_SECONDARY = new Color(66, 133, 244);
     private static final Color COLOR_CARD = new Color(255, 255, 255);
     private static final Color COLOR_BACKGROUND = new Color(248, 249, 250);
     private static final Color COLOR_BORDER = new Color(224, 224, 224);
+    private static final Color COLOR_TEXT = new Color(33, 33, 33);
     
     private ControladorModulos controlador;
     
@@ -30,10 +28,10 @@ public class PanelDuenoMascota extends JPanel {
         tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 13));
         tabbedPane.setBackground(COLOR_CARD);
         
-        tabbedPane.addTab("👥 Registrar Dueño", crearPanelRegistroDueno());
-        tabbedPane.addTab("🔍 Buscar Dueño", crearPanelBuscarDueno());
-        tabbedPane.addTab("🐕 Registrar Mascota", crearPanelRegistroMascota());
-        tabbedPane.addTab("📋 Ver Mascotas", crearPanelVerMascotas());
+        tabbedPane.addTab("\uD83D\uDC65 Registrar Dueno", crearPanelRegistroDueno());
+        tabbedPane.addTab("\uD83D\uDD0D Buscar Dueno", crearPanelBuscarDueno());
+        tabbedPane.addTab("\uD83D\uDC15 Registrar Mascota", crearPanelRegistroMascota());
+        tabbedPane.addTab("\uD83D\uDCCB Ver Mascotas", crearPanelVerMascotas());
         
         add(tabbedPane, BorderLayout.CENTER);
     }
@@ -54,7 +52,6 @@ public class PanelDuenoMascota extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(10, 10, 10, 10);
         
-        // Campos
         JTextField txtDNI = crearCampoTexto();
         JTextField txtNombres = crearCampoTexto();
         JTextField txtApellidos = crearCampoTexto();
@@ -62,7 +59,6 @@ public class PanelDuenoMascota extends JPanel {
         JTextField txtEmail = crearCampoTexto();
         JTextField txtDireccion = crearCampoTexto();
         
-        // Layout
         int fila = 0;
         
         gbc.gridx = 0; gbc.gridy = fila;
@@ -84,7 +80,7 @@ public class PanelDuenoMascota extends JPanel {
         
         fila++;
         gbc.gridx = 0; gbc.gridy = fila; gbc.gridwidth = 1;
-        panelFormulario.add(crearEtiqueta("Teléfono *"), gbc);
+        panelFormulario.add(crearEtiqueta("Telefono *"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
         panelFormulario.add(txtTelefono, gbc);
         
@@ -96,18 +92,17 @@ public class PanelDuenoMascota extends JPanel {
         
         fila++;
         gbc.gridx = 0; gbc.gridy = fila; gbc.gridwidth = 1;
-        panelFormulario.add(crearEtiqueta("Dirección"), gbc);
+        panelFormulario.add(crearEtiqueta("Direccion"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
         panelFormulario.add(txtDireccion, gbc);
         
-        // Botones
         fila++;
         gbc.gridx = 0; gbc.gridy = fila; gbc.gridwidth = 3;
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
         panelBotones.setBackground(COLOR_CARD);
         
-        JButton btnRegistrar = crearBoton("✓ Registrar Dueño", COLOR_PRIMARY);
-        JButton btnLimpiar = crearBoton("✗ Limpiar", new Color(158, 158, 158));
+        JButton btnRegistrar = crearBoton("\u2713 Registrar Dueno", COLOR_PRIMARY);
+        JButton btnLimpiar = crearBoton("\u2717 Limpiar", new Color(158, 158, 158));
         
         btnRegistrar.addActionListener(e -> {
             if (validarCamposDueno(txtDNI, txtNombres, txtApellidos, txtTelefono)) {
@@ -121,10 +116,10 @@ public class PanelDuenoMascota extends JPanel {
                 );
                 
                 if (dueno != null) {
-                    mostrarMensajeExito("Dueño registrado exitosamente\nID: " + dueno.getIdDueno());
+                    mostrarMensajeExito("Dueno registrado exitosamente\nID: " + dueno.getIdDueno());
                     limpiarCampos(txtDNI, txtNombres, txtApellidos, txtTelefono, txtEmail, txtDireccion);
                 } else {
-                    mostrarMensajeError("Error al registrar dueño. Verifique que el DNI no esté duplicado.");
+                    mostrarMensajeError("Error al registrar dueno. Verifique que el DNI no este duplicado.");
                 }
             }
         });
@@ -135,7 +130,6 @@ public class PanelDuenoMascota extends JPanel {
         panelBotones.add(btnLimpiar);
         panelFormulario.add(panelBotones, gbc);
         
-        // Centrar formulario
         JPanel panelCentrado = new JPanel(new GridBagLayout());
         panelCentrado.setBackground(COLOR_BACKGROUND);
         panelCentrado.add(panelFormulario);
@@ -149,7 +143,6 @@ public class PanelDuenoMascota extends JPanel {
         panelPrincipal.setBackground(COLOR_BACKGROUND);
         panelPrincipal.setBorder(new EmptyBorder(20, 20, 20, 20));
         
-        // Panel de búsqueda
         JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
         panelBusqueda.setBackground(COLOR_CARD);
         panelBusqueda.setBorder(BorderFactory.createCompoundBorder(
@@ -161,16 +154,15 @@ public class PanelDuenoMascota extends JPanel {
         JTextField txtBuscar = crearCampoTexto();
         txtBuscar.setPreferredSize(new Dimension(300, 35));
         
-        JButton btnBuscar = crearBoton("🔍 Buscar", COLOR_SECONDARY);
-        JButton btnTodos = crearBoton("📋 Ver Todos", COLOR_PRIMARY);
+        JButton btnBuscar = crearBoton("\uD83D\uDD0D Buscar", COLOR_SECONDARY);
+        JButton btnTodos = crearBoton("\uD83D\uDCCB Ver Todos", COLOR_PRIMARY);
         
         panelBusqueda.add(lblBuscar);
         panelBusqueda.add(txtBuscar);
         panelBusqueda.add(btnBuscar);
         panelBusqueda.add(btnTodos);
         
-        // Tabla de resultados
-        String[] columnas = {"ID", "DNI", "Nombres", "Apellidos", "Teléfono", "Email"};
+        String[] columnas = {"ID", "DNI", "Nombres", "Apellidos", "Telefono", "Email"};
         DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -205,8 +197,7 @@ public class PanelDuenoMascota extends JPanel {
         });
         
         btnTodos.addActionListener(e -> {
-            // Implementar listar todos los dueños
-            mostrarMensajeInfo("Función 'Ver Todos' en desarrollo");
+            mostrarMensajeInfo("Funcion 'Ver Todos' en desarrollo");
         });
         
         panelPrincipal.add(panelBusqueda, BorderLayout.NORTH);
@@ -231,7 +222,6 @@ public class PanelDuenoMascota extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(10, 10, 10, 10);
         
-        // Campos
         JTextField txtIdDueno = crearCampoTexto();
         JTextField txtNombre = crearCampoTexto();
         JTextField txtEspecie = crearCampoTexto();
@@ -241,11 +231,10 @@ public class PanelDuenoMascota extends JPanel {
         cmbSexo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         JTextField txtPeso = crearCampoTexto();
         
-        // Layout
         int fila = 0;
         
         gbc.gridx = 0; gbc.gridy = fila;
-        panelFormulario.add(crearEtiqueta("ID Dueño *"), gbc);
+        panelFormulario.add(crearEtiqueta("ID Dueno *"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
         panelFormulario.add(txtIdDueno, gbc);
         
@@ -269,7 +258,7 @@ public class PanelDuenoMascota extends JPanel {
         
         fila++;
         gbc.gridx = 0; gbc.gridy = fila; gbc.gridwidth = 1;
-        panelFormulario.add(crearEtiqueta("Edad (años)"), gbc);
+        panelFormulario.add(crearEtiqueta("Edad (anos)"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
         panelFormulario.add(txtEdad, gbc);
         
@@ -285,14 +274,13 @@ public class PanelDuenoMascota extends JPanel {
         gbc.gridx = 1; gbc.gridwidth = 2;
         panelFormulario.add(txtPeso, gbc);
         
-        // Botones
         fila++;
         gbc.gridx = 0; gbc.gridy = fila; gbc.gridwidth = 3;
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
         panelBotones.setBackground(COLOR_CARD);
         
-        JButton btnRegistrar = crearBoton("✓ Registrar Mascota", COLOR_PRIMARY);
-        JButton btnLimpiar = crearBoton("✗ Limpiar", new Color(158, 158, 158));
+        JButton btnRegistrar = crearBoton("\u2713 Registrar Mascota", COLOR_PRIMARY);
+        JButton btnLimpiar = crearBoton("\u2717 Limpiar", new Color(158, 158, 158));
         
         btnRegistrar.addActionListener(e -> {
             try {
@@ -314,10 +302,10 @@ public class PanelDuenoMascota extends JPanel {
                     mostrarMensajeExito("Mascota registrada exitosamente\nID: " + mascota.getIdMascota());
                     limpiarCampos(txtIdDueno, txtNombre, txtEspecie, txtRaza, txtEdad, txtPeso);
                 } else {
-                    mostrarMensajeError("Error al registrar mascota. Verifique el ID del dueño.");
+                    mostrarMensajeError("Error al registrar mascota. Verifique el ID del dueno.");
                 }
             } catch (NumberFormatException ex) {
-                mostrarMensajeError("Error en datos numéricos. Verifique los campos.");
+                mostrarMensajeError("Error en datos numericos. Verifique los campos.");
             }
         });
         
@@ -327,7 +315,6 @@ public class PanelDuenoMascota extends JPanel {
         panelBotones.add(btnLimpiar);
         panelFormulario.add(panelBotones, gbc);
         
-        // Centrar formulario
         JPanel panelCentrado = new JPanel(new GridBagLayout());
         panelCentrado.setBackground(COLOR_BACKGROUND);
         panelCentrado.add(panelFormulario);
@@ -341,7 +328,6 @@ public class PanelDuenoMascota extends JPanel {
         panelPrincipal.setBackground(COLOR_BACKGROUND);
         panelPrincipal.setBorder(new EmptyBorder(20, 20, 20, 20));
         
-        // Panel de búsqueda
         JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
         panelBusqueda.setBackground(COLOR_CARD);
         panelBusqueda.setBorder(BorderFactory.createCompoundBorder(
@@ -349,17 +335,16 @@ public class PanelDuenoMascota extends JPanel {
             new EmptyBorder(15, 20, 15, 20)
         ));
         
-        JLabel lblDueno = crearEtiqueta("ID Dueño:");
+        JLabel lblDueno = crearEtiqueta("ID Dueno:");
         JTextField txtIdDueno = crearCampoTexto();
         txtIdDueno.setPreferredSize(new Dimension(150, 35));
         
-        JButton btnBuscar = crearBoton("🔍 Ver Mascotas", COLOR_SECONDARY);
+        JButton btnBuscar = crearBoton("\uD83D\uDD0D Ver Mascotas", COLOR_SECONDARY);
         
         panelBusqueda.add(lblDueno);
         panelBusqueda.add(txtIdDueno);
         panelBusqueda.add(btnBuscar);
         
-        // Tabla de resultados
         String[] columnas = {"ID", "Nombre", "Especie", "Raza", "Edad", "Sexo", "Peso (kg)"};
         DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
             @Override
@@ -392,7 +377,7 @@ public class PanelDuenoMascota extends JPanel {
                     }
                 }
             } catch (NumberFormatException ex) {
-                mostrarMensajeError("ID de dueño inválido");
+                mostrarMensajeError("ID de dueno invalido");
             }
         });
         
@@ -402,7 +387,6 @@ public class PanelDuenoMascota extends JPanel {
         return panelPrincipal;
     }
     
-    // Métodos auxiliares
     private JLabel crearEtiqueta(String texto) {
         JLabel lbl = new JLabel(texto);
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
@@ -419,7 +403,7 @@ public class PanelDuenoMascota extends JPanel {
     
     private JButton crearBoton(String texto, Color color) {
         JButton btn = new JButton(texto);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setFont(new Font("Segoe UI Emoji", Font.BOLD, 13));
         btn.setForeground(Color.WHITE);
         btn.setBackground(color);
         btn.setFocusPainted(false);
@@ -446,7 +430,7 @@ public class PanelDuenoMascota extends JPanel {
     }
     
     private void mostrarMensajeExito(String mensaje) {
-        JOptionPane.showMessageDialog(this, mensaje, "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, mensaje, "Exito", JOptionPane.INFORMATION_MESSAGE);
     }
     
     private void mostrarMensajeError(String mensaje) {
@@ -454,8 +438,20 @@ public class PanelDuenoMascota extends JPanel {
     }
     
     private void mostrarMensajeInfo(String mensaje) {
-        JOptionPane.showMessageDialog(this, mensaje, "Información", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, mensaje, "Informacion", JOptionPane.INFORMATION_MESSAGE);
     }
     
-    private static final Color COLOR_TEXT = new Color(33, 33, 33);
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Panel Dueño y Mascota - Prueba");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(1200, 700);
+            frame.setLocationRelativeTo(null);
+
+            // Agregar directamente el panel
+            frame.add(new PanelDuenoMascota());
+            frame.setVisible(true);
+        });
+    }
+    
 }
