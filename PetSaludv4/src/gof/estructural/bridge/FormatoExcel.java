@@ -4,405 +4,482 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class FormatoExcel implements IFormatoReporte {
+
     private String contenido;
     private String titulo;
     private SimpleDateFormat sdf;
-    
+
     public FormatoExcel() {
         this.sdf = new SimpleDateFormat("dd/MM/yyyy");
     }
-    
+
     @Override
     public void setContenido(String contenido) {
         this.contenido = contenido;
     }
-    
+
     @Override
     public void setTitulo(String titulo) {
         this.titulo = titulo;
     }
-    
+
     @Override
     public String generar() {
         return generarCSVProfesional(contenido, titulo);
     }
-    
+
     @Override
     public String getExtension() {
         return ".csv";
     }
-    
-private String generarCSVProfesional(String contenido, String titulo) {
-    StringBuilder csv = new StringBuilder();
-    
-    // BOM UTF-8
-    csv.append("\uFEFF");
-    
-    // === ENCABEZADO ===
-    csv.append("VETERINARIA PETSALUD\n");
-    csv.append("Sistema de Gestión Veterinaria\n");
-    csv.append("═════════════════════════════════════════\n");
-    csv.append("REPORTE:,").append(titulo).append("\n");
-    csv.append("FECHA:,").append(new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date())).append("\n");
-    csv.append("\n\n");
-    
-    // Detectar tipo y generar estructura
-    if (titulo.contains("Órdenes") || titulo.contains("ORDENES")) {
-        generarTablaOrdenes(csv, contenido);
-    } else if (titulo.contains("Laboratorio") || titulo.contains("LABORATORIO")) {
-        generarTablaLaboratorio(csv, contenido);
-    } else if (titulo.contains("Financiero") || titulo.contains("FINANCIERO")) {
-        generarTablaFinanciero(csv, contenido);
-    } else if (titulo.contains("Veterinarios") || titulo.contains("VETERINARIOS")) {
-        generarTablaVeterinarios(csv, contenido);
-    } else {
-        generarTablaGeneral(csv, contenido);
-    }
-    
-    // === PIE ===
-    csv.append("\n\n");
-    csv.append("═════════════════════════════════════════\n");
-    csv.append("Documento confidencial - Uso interno\n");
-    csv.append("Generado:,").append(new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date())).append("\n");
-    
-    return csv.toString();
-}
 
-private void generarTablaOrdenes(StringBuilder csv, String contenido) {
-    csv.append("═════════════════════════════════════════\n");
-    csv.append("TABLA DE ÓRDENES VETERINARIAS\n");
-    csv.append("═════════════════════════════════════════\n\n");
-    
-    // Encabezados de columna
-    csv.append("ID Orden,Fecha,Tipo Examen,Estado,Mascota,Especie,Dueño,Teléfono,Veterinario,Especialidad,Tiene Resultado,Estado Resultado\n");
-    
-    // Parsear contenido
-    String[] lineas = contenido.split("\n");
-    Map<String, String> ordenActual = new LinkedHashMap<>();
-    
-    for (String linea : lineas) {
-        linea = linea.trim();
-        
-        if (linea.contains("ID Orden:")) {
-            if (!ordenActual.isEmpty()) {
-                escribirFilaOrden(csv, ordenActual);
-                ordenActual.clear();
+    private String generarCSVProfesional(String contenido, String titulo) {
+        StringBuilder csv = new StringBuilder();
+
+        // BOM UTF-8
+        csv.append("\uFEFF");
+
+        // === ENCABEZADO ===
+        csv.append("VETERINARIA PETSALUD\n");
+        csv.append("Sistema de Gestión Veterinaria\n");
+        csv.append("═════════════════════════════════════════\n");
+        csv.append("REPORTE:,").append(titulo).append("\n");
+        csv.append("FECHA:,").append(new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date())).append("\n");
+        csv.append("\n\n");
+
+        // Detectar tipo y generar estructura
+        if (titulo.contains("Órdenes") || titulo.contains("ORDENES")) {
+            generarTablaOrdenes(csv, contenido);
+        } else if (titulo.contains("Laboratorio") || titulo.contains("LABORATORIO")) {
+            generarTablaLaboratorio(csv, contenido);
+        } else if (titulo.contains("Financiero") || titulo.contains("FINANCIERO")) {
+            generarTablaFinanciero(csv, contenido);
+        } else if (titulo.contains("Veterinarios") || titulo.contains("VETERINARIOS")) {
+            generarTablaVeterinarios(csv, contenido);
+        } else {
+            generarTablaGeneral(csv, contenido);
+        }
+
+        // === PIE ===
+        csv.append("\n\n");
+        csv.append("═════════════════════════════════════════\n");
+        csv.append("Documento confidencial - Uso interno\n");
+        csv.append("Generado:,").append(new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date())).append("\n");
+
+        return csv.toString();
+    }
+
+    private void generarTablaOrdenes(StringBuilder csv, String contenido) {
+        csv.append("═════════════════════════════════════════\n");
+        csv.append("TABLA DE ÓRDENES VETERINARIAS\n");
+        csv.append("═════════════════════════════════════════\n\n");
+
+        // Encabezados de columna
+        csv.append("ID Orden,Fecha,Tipo Examen,Estado,Mascota,Especie,Dueño,Teléfono,Veterinario,Especialidad,Tiene Resultado,Estado Resultado\n");
+
+        // Parsear contenido
+        String[] lineas = contenido.split("\n");
+        Map<String, String> ordenActual = new LinkedHashMap<>();
+
+        for (String linea : lineas) {
+            linea = linea.trim();
+
+            if (linea.contains("ID Orden:")) {
+                if (!ordenActual.isEmpty()) {
+                    escribirFilaOrdenDesdeString(csv, ordenActual);
+                    ordenActual.clear();
+                }
+            }
+
+            if (linea.contains(":") && !linea.contains("═") && !linea.contains("─")) {
+                String[] partes = linea.split(":", 2);
+                if (partes.length == 2) {
+                    String clave = partes[0].trim();
+                    String valor = partes[1].trim();
+                    ordenActual.put(clave, valor);
+                }
             }
         }
-        
-        if (linea.contains(":") && !linea.contains("═") && !linea.contains("─")) {
-            String[] partes = linea.split(":", 2);
-            if (partes.length == 2) {
-                String clave = partes[0].trim();
-                String valor = partes[1].trim();
-                ordenActual.put(clave, valor);
-            }
+
+        // Última orden
+        if (!ordenActual.isEmpty()) {
+            escribirFilaOrdenDesdeString(csv, ordenActual);
         }
     }
-    
-    // Última orden
-    if (!ordenActual.isEmpty()) {
-        escribirFilaOrden(csv, ordenActual);
-    }
-}
 
-private void escribirFilaOrden(StringBuilder csv, Map<String, String> orden) {
-    csv.append(escaparCSV(orden.getOrDefault("ID Orden", ""))).append(",");
-    csv.append(escaparCSV(orden.getOrDefault("Fecha", ""))).append(",");
-    csv.append(escaparCSV(orden.getOrDefault("Tipo Examen", ""))).append(",");
-    csv.append(escaparCSV(orden.getOrDefault("Estado", ""))).append(",");
-    
-    // Extraer mascota y especie
-    String mascotaCompleta = orden.getOrDefault("Mascota", "");
-    String mascota = mascotaCompleta;
-    String especie = "";
-    
-    if (mascotaCompleta.contains("(") && mascotaCompleta.contains(")")) {
-        int inicio = mascotaCompleta.indexOf("(");
-        int fin = mascotaCompleta.indexOf(")");
-        mascota = mascotaCompleta.substring(0, inicio).trim();
-        especie = mascotaCompleta.substring(inicio + 1, fin).trim();
-    }
-    
-    csv.append(escaparCSV(mascota)).append(",");
-    csv.append(escaparCSV(especie)).append(",");
-    csv.append(escaparCSV(orden.getOrDefault("Dueño", orden.getOrDefault("Dueno", "")))).append(",");
-    csv.append(escaparCSV(orden.getOrDefault("Teléfono", orden.getOrDefault("Telefono", "")))).append(",");
-    
-    // Extraer veterinario y especialidad
-    String veterinarioCompleto = orden.getOrDefault("Veterinario", "");
-    String veterinario = veterinarioCompleto;
-    String especialidad = "";
-    
-    if (veterinarioCompleto.contains(" - ")) {
-        String[] partes = veterinarioCompleto.split(" - ", 2);
-        veterinario = partes[0].trim();
-        especialidad = partes.length > 1 ? partes[1].trim() : "";
-    }
-    
-    csv.append(escaparCSV(veterinario)).append(",");
-    csv.append(escaparCSV(especialidad)).append(",");
-    csv.append(escaparCSV(orden.getOrDefault("Tiene Resultado", ""))).append(",");
-    csv.append(escaparCSV(orden.getOrDefault("Estado Resultado", ""))).append("\n");
-}
+    private void escribirFilaOrdenDesdeString(StringBuilder csv, Map<String, String> orden) {
+        // ID Orden
+        csv.append(escaparCSV(orden.getOrDefault("ID Orden", "N/A"))).append(",");
 
-private void generarTablaLaboratorio(StringBuilder csv, String contenido) {
-    csv.append("═════════════════════════════════════════\n");
-    csv.append("ANÁLISIS DE LABORATORIO\n");
-    csv.append("═════════════════════════════════════════\n\n");
-    
-    csv.append("Tipo Examen,Cantidad,Completados,Validados,Pendientes,En Proceso,Tiempo Promedio (hrs),Rango Fechas\n");
-    
-    String[] lineas = contenido.split("\n");
-    Map<String, String> analisisActual = new LinkedHashMap<>();
-    
-    for (String linea : lineas) {
-        linea = linea.trim();
-        
-        if (linea.startsWith("Tipo de Examen:")) {
-            if (!analisisActual.isEmpty()) {
-                escribirFilaLaboratorio(csv, analisisActual);
-                analisisActual.clear();
+        // Fecha
+        csv.append(escaparCSV(orden.getOrDefault("Fecha", "N/A"))).append(",");
+
+        // Tipo Examen
+        csv.append(escaparCSV(orden.getOrDefault("Tipo Examen", orden.getOrDefault("Tipo de Examen", "N/A")))).append(",");
+
+        // Estado
+        csv.append(escaparCSV(orden.getOrDefault("Estado", "N/A"))).append(",");
+
+        // Mascota - extraer del formato "Mascota (Especie)" o usar directamente
+        String mascotaCompleta = orden.getOrDefault("Mascota", "N/A");
+        String mascota = mascotaCompleta;
+        String especie = orden.getOrDefault("Especie", "N/A");
+
+        if (mascotaCompleta.contains("(") && mascotaCompleta.contains(")")) {
+            int inicio = mascotaCompleta.indexOf("(");
+            int fin = mascotaCompleta.indexOf(")");
+            mascota = mascotaCompleta.substring(0, inicio).trim();
+            especie = mascotaCompleta.substring(inicio + 1, fin).trim();
+        }
+
+        csv.append(escaparCSV(mascota)).append(",");
+        csv.append(escaparCSV(especie)).append(",");
+
+        // Dueño
+        csv.append(escaparCSV(orden.getOrDefault("Dueño", orden.getOrDefault("Dueno", "N/A")))).append(",");
+
+        // Teléfono
+        csv.append(escaparCSV(orden.getOrDefault("Teléfono", orden.getOrDefault("Telefono", "N/A")))).append(",");
+
+        // Veterinario - extraer del formato "Nombre - Especialidad" o usar directamente
+        String veterinarioCompleto = orden.getOrDefault("Veterinario", "N/A");
+        String veterinario = veterinarioCompleto;
+        String especialidad = orden.getOrDefault("Especialidad", "N/A");
+
+        if (veterinarioCompleto.contains(" - ")) {
+            String[] partes = veterinarioCompleto.split(" - ", 2);
+            veterinario = partes[0].trim();
+            especialidad = partes.length > 1 ? partes[1].trim() : especialidad;
+        }
+
+        csv.append(escaparCSV(veterinario)).append(",");
+        csv.append(escaparCSV(especialidad)).append(",");
+
+        // Tiene Resultado
+        csv.append(escaparCSV(orden.getOrDefault("Tiene Resultado", "N/A"))).append(",");
+
+        // Estado Resultado
+        csv.append(escaparCSV(orden.getOrDefault("Estado Resultado", "N/A"))).append("\n");
+    }
+
+    private void escribirFilaOrden(StringBuilder csv, Map<String, Object> orden) {
+        // ID Orden
+        csv.append(escaparCSV(getValueSafe(orden, "id_orden"))).append(",");
+
+        // Fecha
+        csv.append(escaparCSV(getValueSafe(orden, "fecha_orden"))).append(",");
+
+        // Tipo Examen
+        csv.append(escaparCSV(getValueSafe(orden, "tipo_examen"))).append(",");
+
+        // Estado
+        csv.append(escaparCSV(getValueSafe(orden, "estado"))).append(",");
+
+        // Mascota - probar múltiples claves
+        String mascota = getValueSafe(orden, "mascota", "nombre");
+        csv.append(escaparCSV(mascota)).append(",");
+
+        // Especie
+        csv.append(escaparCSV(getValueSafe(orden, "especie"))).append(",");
+
+        // Dueño
+        csv.append(escaparCSV(getValueSafe(orden, "dueno"))).append(",");
+
+        // Teléfono - probar múltiples claves
+        String telefono = getValueSafe(orden, "telefono_dueno", "telefono");
+        csv.append(escaparCSV(telefono)).append(",");
+
+        // Veterinario
+        csv.append(escaparCSV(getValueSafe(orden, "veterinario"))).append(",");
+
+        // Especialidad - probar múltiples claves
+        String especialidad = getValueSafe(orden, "especialidad_veterinario", "especialidad");
+        csv.append(escaparCSV(especialidad)).append(",");
+
+        // Tiene Resultado
+        csv.append(escaparCSV(getValueSafe(orden, "tiene_resultado"))).append(",");
+
+        // Estado Resultado
+        csv.append(escaparCSV(getValueSafe(orden, "estado_resultado"))).append("\n");
+    }
+
+// Método auxiliar para obtener valores con fallback
+    private String getValueSafe(Map<String, Object> map, String... keys) {
+        for (String key : keys) {
+            Object value = map.get(key);
+            if (value != null && !value.toString().trim().isEmpty() && !value.toString().equals("N/A")) {
+                return value.toString();
             }
         }
-        
-        if (linea.contains(":") && !linea.contains("═")) {
-            String[] partes = linea.split(":", 2);
-            if (partes.length == 2) {
-                String clave = partes[0].trim().replace("  ", "");
-                String valor = partes[1].trim();
-                analisisActual.put(clave, valor);
+        return "N/A";
+    }
+
+    private void generarTablaLaboratorio(StringBuilder csv, String contenido) {
+        csv.append("═════════════════════════════════════════\n");
+        csv.append("ANÁLISIS DE LABORATORIO\n");
+        csv.append("═════════════════════════════════════════\n\n");
+
+        csv.append("Tipo Examen,Cantidad,Completados,Validados,Pendientes,En Proceso,Tiempo Promedio (hrs),Rango Fechas\n");
+
+        String[] lineas = contenido.split("\n");
+        Map<String, String> analisisActual = new LinkedHashMap<>();
+
+        for (String linea : lineas) {
+            linea = linea.trim();
+
+            if (linea.startsWith("Tipo de Examen:")) {
+                if (!analisisActual.isEmpty()) {
+                    escribirFilaLaboratorio(csv, analisisActual);
+                    analisisActual.clear();
+                }
+            }
+
+            if (linea.contains(":") && !linea.contains("═")) {
+                String[] partes = linea.split(":", 2);
+                if (partes.length == 2) {
+                    String clave = partes[0].trim().replace("  ", "");
+                    String valor = partes[1].trim();
+                    analisisActual.put(clave, valor);
+                }
             }
         }
-    }
-    
-    if (!analisisActual.isEmpty()) {
-        escribirFilaLaboratorio(csv, analisisActual);
-    }
-}
 
-private void escribirFilaLaboratorio(StringBuilder csv, Map<String, String> analisis) {
-    csv.append(escaparCSV(analisis.getOrDefault("Tipo de Examen", ""))).append(",");
-    csv.append(escaparCSV(analisis.getOrDefault("Cantidad", ""))).append(",");
-    csv.append(escaparCSV(analisis.getOrDefault("Completados", ""))).append(",");
-    csv.append(escaparCSV(analisis.getOrDefault("Validados", ""))).append(",");
-    csv.append(escaparCSV(analisis.getOrDefault("Pendientes", ""))).append(",");
-    csv.append(escaparCSV(analisis.getOrDefault("En Proceso", ""))).append(",");
-    csv.append(escaparCSV(analisis.getOrDefault("Tiempo Promedio", ""))).append(",");
-    csv.append(escaparCSV(analisis.getOrDefault("Rango", ""))).append("\n");
-}
-
-private void generarTablaFinanciero(StringBuilder csv, String contenido) {
-    csv.append("═════════════════════════════════════════\n");
-    csv.append("RESUMEN FINANCIERO\n");
-    csv.append("═════════════════════════════════════════\n\n");
-    
-    csv.append("ID Factura,Fecha,Cliente,Teléfono,Método Pago,Monto,Estado,Servicios\n");
-    
-    String[] lineas = contenido.split("\n");
-    Map<String, String> facturaActual = new LinkedHashMap<>();
-    
-    for (String linea : lineas) {
-        linea = linea.trim();
-        
-        if (linea.startsWith("Factura #")) {
-            if (!facturaActual.isEmpty()) {
-                escribirFilaFinanciero(csv, facturaActual);
-                facturaActual.clear();
-            }
-            facturaActual.put("ID Factura", linea.replace("Factura #", ""));
-        }
-        
-        if (linea.contains(":") && !linea.contains("═") && !linea.contains("─")) {
-            String[] partes = linea.split(":", 2);
-            if (partes.length == 2) {
-                String clave = partes[0].trim();
-                String valor = partes[1].trim();
-                facturaActual.put(clave, valor);
-            }
+        if (!analisisActual.isEmpty()) {
+            escribirFilaLaboratorio(csv, analisisActual);
         }
     }
-    
-    if (!facturaActual.isEmpty()) {
-        escribirFilaFinanciero(csv, facturaActual);
+
+    private void escribirFilaLaboratorio(StringBuilder csv, Map<String, String> analisis) {
+        csv.append(escaparCSV(analisis.getOrDefault("Tipo de Examen", analisis.getOrDefault("Tipo Examen", "N/A")))).append(",");
+        csv.append(escaparCSV(analisis.getOrDefault("Cantidad", "0"))).append(",");
+        csv.append(escaparCSV(analisis.getOrDefault("Completados", "0"))).append(",");
+        csv.append(escaparCSV(analisis.getOrDefault("Validados", "0"))).append(",");
+        csv.append(escaparCSV(analisis.getOrDefault("Pendientes", "0"))).append(",");
+        csv.append(escaparCSV(analisis.getOrDefault("En Proceso", "0"))).append(",");
+        csv.append(escaparCSV(analisis.getOrDefault("Tiempo Promedio", "0"))).append(",");
+
+        // Construir rango de fechas
+        String primeraFecha = analisis.getOrDefault("Primera Fecha", analisis.getOrDefault("primera_fecha", ""));
+        String ultimaFecha = analisis.getOrDefault("Última Fecha", analisis.getOrDefault("ultima_fecha", ""));
+        String rango = (!primeraFecha.isEmpty() && !ultimaFecha.isEmpty())
+                ? primeraFecha + " - " + ultimaFecha
+                : "N/A";
+
+        csv.append(escaparCSV(rango)).append("\n");
     }
-}
 
-private void escribirFilaFinanciero(StringBuilder csv, Map<String, String> factura) {
-    csv.append(escaparCSV(factura.getOrDefault("ID Factura", ""))).append(",");
-    csv.append(escaparCSV(factura.getOrDefault("Fecha", ""))).append(",");
-    csv.append(escaparCSV(factura.getOrDefault("Cliente", ""))).append(",");
-    csv.append(escaparCSV(factura.getOrDefault("Teléfono", factura.getOrDefault("Telefono", "")))).append(",");
-    csv.append(escaparCSV(factura.getOrDefault("Método de Pago", ""))).append(",");
-    csv.append(escaparCSV(factura.getOrDefault("Monto", ""))).append(",");
-    csv.append(escaparCSV(factura.getOrDefault("Estado", ""))).append(",");
-    csv.append(escaparCSV(factura.getOrDefault("Servicios", ""))).append("\n");
-}
+    private void generarTablaFinanciero(StringBuilder csv, String contenido) {
+        csv.append("═════════════════════════════════════════\n");
+        csv.append("RESUMEN FINANCIERO\n");
+        csv.append("═════════════════════════════════════════\n\n");
 
-private void generarTablaVeterinarios(StringBuilder csv, String contenido) {
-    csv.append("═════════════════════════════════════════\n");
-    csv.append("DESEMPEÑO DE VETERINARIOS\n");
-    csv.append("═════════════════════════════════════════\n\n");
-    
-    csv.append("Veterinario,Especialidad,Total Órdenes,Pendientes,En Proceso,Completadas,Validadas,Mascotas Atendidas,Clientes Atendidos\n");
-    
-    String[] lineas = contenido.split("\n");
-    Map<String, String> vetActual = new LinkedHashMap<>();
-    
-    for (String linea : lineas) {
-        linea = linea.trim();
-        
-        if (linea.startsWith("Veterinario:")) {
-            if (!vetActual.isEmpty()) {
-                escribirFilaVeterinario(csv, vetActual);
-                vetActual.clear();
+        csv.append("ID Factura,Fecha,Cliente,Teléfono,Método Pago,Monto,Estado,Servicios\n");
+
+        String[] lineas = contenido.split("\n");
+        Map<String, String> facturaActual = new LinkedHashMap<>();
+
+        for (String linea : lineas) {
+            linea = linea.trim();
+
+            if (linea.startsWith("Factura #")) {
+                if (!facturaActual.isEmpty()) {
+                    escribirFilaFinanciero(csv, facturaActual);
+                    facturaActual.clear();
+                }
+                facturaActual.put("ID Factura", linea.replace("Factura #", ""));
+            }
+
+            if (linea.contains(":") && !linea.contains("═") && !linea.contains("─")) {
+                String[] partes = linea.split(":", 2);
+                if (partes.length == 2) {
+                    String clave = partes[0].trim();
+                    String valor = partes[1].trim();
+                    facturaActual.put(clave, valor);
+                }
             }
         }
-        
-        if (linea.contains(":") && !linea.contains("═") && !linea.contains("─")) {
-            String[] partes = linea.split(":", 2);
-            if (partes.length == 2) {
-                String clave = partes[0].trim().replace("  - ", "").replace("  ", "");
-                String valor = partes[1].trim();
-                vetActual.put(clave, valor);
-            }
+
+        if (!facturaActual.isEmpty()) {
+            escribirFilaFinanciero(csv, facturaActual);
         }
     }
-    
-    if (!vetActual.isEmpty()) {
-        escribirFilaVeterinario(csv, vetActual);
+
+    private void escribirFilaFinanciero(StringBuilder csv, Map<String, String> factura) {
+        csv.append(escaparCSV(factura.getOrDefault("ID Factura", ""))).append(",");
+        csv.append(escaparCSV(factura.getOrDefault("Fecha", ""))).append(",");
+        csv.append(escaparCSV(factura.getOrDefault("Cliente", ""))).append(",");
+        csv.append(escaparCSV(factura.getOrDefault("Teléfono", factura.getOrDefault("Telefono", "")))).append(",");
+        csv.append(escaparCSV(factura.getOrDefault("Método de Pago", ""))).append(",");
+        csv.append(escaparCSV(factura.getOrDefault("Monto", ""))).append(",");
+        csv.append(escaparCSV(factura.getOrDefault("Estado", ""))).append(",");
+        csv.append(escaparCSV(factura.getOrDefault("Servicios", ""))).append("\n");
     }
-}
 
-private void escribirFilaVeterinario(StringBuilder csv, Map<String, String> vet) {
-    csv.append(escaparCSV(vet.getOrDefault("Veterinario", ""))).append(",");
-    csv.append(escaparCSV(vet.getOrDefault("Especialidad", ""))).append(",");
-    csv.append(escaparCSV(vet.getOrDefault("Total Órdenes", vet.getOrDefault("Total Ordenes", "")))).append(",");
-    csv.append(escaparCSV(vet.getOrDefault("Pendientes", ""))).append(",");
-    csv.append(escaparCSV(vet.getOrDefault("En Proceso", ""))).append(",");
-    csv.append(escaparCSV(vet.getOrDefault("Completadas", ""))).append(",");
-    csv.append(escaparCSV(vet.getOrDefault("Validadas", ""))).append(",");
-    csv.append(escaparCSV(vet.getOrDefault("Mascotas Atendidas", ""))).append(",");
-    csv.append(escaparCSV(vet.getOrDefault("Clientes Atendidos", ""))).append("\n");
-}
+    private void generarTablaVeterinarios(StringBuilder csv, String contenido) {
+        csv.append("═════════════════════════════════════════\n");
+        csv.append("DESEMPEÑO DE VETERINARIOS\n");
+        csv.append("═════════════════════════════════════════\n\n");
 
-private void generarTablaGeneral(StringBuilder csv, String contenido) {
-    csv.append("CONTENIDO DEL REPORTE\n\n");
-    csv.append(contenido.replace("\n", "\n"));
-}
-    
+        csv.append("Veterinario,Especialidad,Total Órdenes,Pendientes,En Proceso,Completadas,Validadas,Mascotas Atendidas,Clientes Atendidos\n");
+
+        String[] lineas = contenido.split("\n");
+        Map<String, String> vetActual = new LinkedHashMap<>();
+
+        for (String linea : lineas) {
+            linea = linea.trim();
+
+            if (linea.startsWith("Veterinario:")) {
+                if (!vetActual.isEmpty()) {
+                    escribirFilaVeterinario(csv, vetActual);
+                    vetActual.clear();
+                }
+            }
+
+            if (linea.contains(":") && !linea.contains("═") && !linea.contains("─")) {
+                String[] partes = linea.split(":", 2);
+                if (partes.length == 2) {
+                    String clave = partes[0].trim().replace("  - ", "").replace("  ", "");
+                    String valor = partes[1].trim();
+                    vetActual.put(clave, valor);
+                }
+            }
+        }
+
+        if (!vetActual.isEmpty()) {
+            escribirFilaVeterinario(csv, vetActual);
+        }
+    }
+
+    private void escribirFilaVeterinario(StringBuilder csv, Map<String, String> vet) {
+        csv.append(escaparCSV(vet.getOrDefault("Veterinario", ""))).append(",");
+        csv.append(escaparCSV(vet.getOrDefault("Especialidad", ""))).append(",");
+        csv.append(escaparCSV(vet.getOrDefault("Total Órdenes", vet.getOrDefault("Total Ordenes", "")))).append(",");
+        csv.append(escaparCSV(vet.getOrDefault("Pendientes", ""))).append(",");
+        csv.append(escaparCSV(vet.getOrDefault("En Proceso", ""))).append(",");
+        csv.append(escaparCSV(vet.getOrDefault("Completadas", ""))).append(",");
+        csv.append(escaparCSV(vet.getOrDefault("Validadas", ""))).append(",");
+        csv.append(escaparCSV(vet.getOrDefault("Mascotas Atendidas", ""))).append(",");
+        csv.append(escaparCSV(vet.getOrDefault("Clientes Atendidos", ""))).append("\n");
+    }
+
+    private void generarTablaGeneral(StringBuilder csv, String contenido) {
+        csv.append("CONTENIDO DEL REPORTE\n\n");
+        csv.append(contenido.replace("\n", "\n"));
+    }
+
     private void generarEstructuraOrdenes(StringBuilder csv, String contenido) {
         csv.append("==========================================================\n");
         csv.append("SECCIÓN 1: RESUMEN EJECUTIVO\n");
         csv.append("==========================================================\n");
-        
+
         Map<String, String> resumen = extraerResumen(contenido);
         csv.append("Métrica,Valor\n");
         resumen.forEach((k, v) -> csv.append(escaparCSV(k)).append(",").append(escaparCSV(v)).append("\n"));
         csv.append("\n");
-        
+
         csv.append("==========================================================\n");
         csv.append("SECCIÓN 2: DETALLE DE ÓRDENES (TABLA PRINCIPAL)\n");
         csv.append("==========================================================\n");
         csv.append("ID Orden,Fecha,Tipo Examen,Estado,Mascota,Especie,Dueño,Teléfono,Veterinario,Especialidad,Tiene Resultado,Estado Resultado\n");
-        
+
         // Extraer órdenes del contenido
         List<String[]> ordenes = extraerOrdenesDeContenido(contenido);
         for (String[] orden : ordenes) {
             csv.append(String.join(",", Arrays.stream(orden).map(this::escaparCSV).toArray(String[]::new))).append("\n");
         }
         csv.append("\n");
-        
+
         csv.append("==========================================================\n");
         csv.append("SECCIÓN 3: ESTADÍSTICAS POR ESTADO\n");
         csv.append("==========================================================\n");
         csv.append("Estado,Cantidad,Porcentaje\n");
         generarEstadisticasEstados(csv, ordenes);
     }
-    
+
     private void generarEstructuraLaboratorio(StringBuilder csv, String contenido) {
         csv.append("==========================================================\n");
         csv.append("ANÁLISIS DE LABORATORIO - TABLA DETALLADA\n");
         csv.append("==========================================================\n");
         csv.append("Tipo Examen,Cantidad,Completados,Validados,Pendientes,En Proceso,Tiempo Promedio (hrs),Primera Fecha,Última Fecha\n");
-        
+
         List<String[]> analisis = extraerDatosLaboratorio(contenido);
         for (String[] dato : analisis) {
             csv.append(String.join(",", Arrays.stream(dato).map(this::escaparCSV).toArray(String[]::new))).append("\n");
         }
         csv.append("\n");
-        
+
         csv.append("RESUMEN DE PRODUCTIVIDAD\n");
         csv.append("Métrica,Valor\n");
         calcularResumenLaboratorio(csv, analisis);
     }
-    
+
     private void generarEstructuraFinanciero(StringBuilder csv, String contenido) {
         csv.append("==========================================================\n");
         csv.append("REPORTE FINANCIERO - INGRESOS Y EGRESOS\n");
         csv.append("==========================================================\n");
         csv.append("Fecha,ID Factura,Cliente,Teléfono,Método Pago,Monto,Estado,Servicios\n");
-        
+
         List<String[]> facturas = extraerDatosFinancieros(contenido);
         for (String[] factura : facturas) {
             csv.append(String.join(",", Arrays.stream(factura).map(this::escaparCSV).toArray(String[]::new))).append("\n");
         }
         csv.append("\n");
-        
+
         csv.append("RESUMEN FINANCIERO\n");
         csv.append("Concepto,Valor\n");
         calcularResumenFinanciero(csv, facturas);
     }
-    
+
     private void generarEstructuraVeterinarios(StringBuilder csv, String contenido) {
         csv.append("==========================================================\n");
         csv.append("DESEMPEÑO DE VETERINARIOS\n");
         csv.append("==========================================================\n");
         csv.append("ID,Veterinario,Especialidad,Total Órdenes,Pendientes,En Proceso,Completadas,Validadas,Mascotas Atendidas,Clientes Atendidos\n");
-        
+
         List<String[]> veterinarios = extraerDatosVeterinarios(contenido);
         for (String[] vet : veterinarios) {
             csv.append(String.join(",", Arrays.stream(vet).map(this::escaparCSV).toArray(String[]::new))).append("\n");
         }
         csv.append("\n");
-        
+
         csv.append("ESTADÍSTICAS GENERALES\n");
         csv.append("Métrica,Valor\n");
         calcularEstadisticasVeterinarios(csv, veterinarios);
     }
-    
+
     private void generarEstructuraGeneral(StringBuilder csv, String contenido) {
         csv.append("==========================================================\n");
         csv.append("CONTENIDO DEL REPORTE\n");
         csv.append("==========================================================\n");
         csv.append("Sección,Campo,Valor\n");
-        
+
         String[] lineas = contenido.split("\n");
         String seccionActual = "GENERAL";
-        
+
         for (String linea : lineas) {
             linea = linea.trim();
-            if (linea.isEmpty() || linea.matches("[=─\\-]+")) continue;
-            
+            if (linea.isEmpty() || linea.matches("[=─\\-]+")) {
+                continue;
+            }
+
             if (linea.matches(".*[A-Z].*:") && !linea.contains(",")) {
                 seccionActual = linea.replace(":", "");
             } else if (linea.contains(":")) {
                 String[] partes = linea.split(":", 2);
                 if (partes.length == 2) {
                     csv.append(escaparCSV(seccionActual)).append(",")
-                       .append(escaparCSV(partes[0].trim())).append(",")
-                       .append(escaparCSV(partes[1].trim())).append("\n");
+                            .append(escaparCSV(partes[0].trim())).append(",")
+                            .append(escaparCSV(partes[1].trim())).append("\n");
                 }
             }
         }
     }
-    
+
     // === MÉTODOS AUXILIARES DE EXTRACCIÓN ===
-    
     private Map<String, String> extraerResumen(String contenido) {
         Map<String, String> resumen = new LinkedHashMap<>();
         String[] lineas = contenido.split("\n");
-        
+
         for (String linea : lineas) {
             if (linea.contains("Total") || linea.contains("Período") || linea.contains("Periodo")) {
                 String[] partes = linea.split(":", 2);
@@ -411,19 +488,19 @@ private void generarTablaGeneral(StringBuilder csv, String contenido) {
                 }
             }
         }
-        
+
         if (resumen.isEmpty()) {
             resumen.put("Información", "Ver detalle en secciones siguientes");
         }
-        
+
         return resumen;
     }
-    
+
     private List<String[]> extraerOrdenesDeContenido(String contenido) {
         List<String[]> ordenes = new ArrayList<>();
         String[] lineas = contenido.split("\n");
         Map<String, String> ordenActual = new HashMap<>();
-        
+
         for (String linea : lineas) {
             linea = linea.trim();
             if (linea.startsWith("ID Orden:")) {
@@ -432,7 +509,7 @@ private void generarTablaGeneral(StringBuilder csv, String contenido) {
                     ordenActual.clear();
                 }
             }
-            
+
             if (linea.contains(":")) {
                 String[] partes = linea.split(":", 2);
                 if (partes.length == 2) {
@@ -440,21 +517,21 @@ private void generarTablaGeneral(StringBuilder csv, String contenido) {
                 }
             }
         }
-        
+
         if (!ordenActual.isEmpty()) {
             ordenes.add(construirFilaOrden(ordenActual));
         }
-        
+
         // Si no se encontraron órdenes en el formato esperado, crear datos de ejemplo
         if (ordenes.isEmpty()) {
-            ordenes.add(new String[]{"1", "24/11/2024", "SANGRE", "COMPLETADA", "Rex", "Perro", 
-                                     "Juan Pérez", "999888777", "Dr. García", "Medicina General", 
-                                     "Sí", "Validado"});
+            ordenes.add(new String[]{"1", "24/11/2024", "SANGRE", "COMPLETADA", "Rex", "Perro",
+                "Juan Pérez", "999888777", "Dr. García", "Medicina General",
+                "Sí", "Validado"});
         }
-        
+
         return ordenes;
     }
-    
+
     private String[] construirFilaOrden(Map<String, String> datos) {
         return new String[]{
             datos.getOrDefault("ID Orden", "N/A"),
@@ -471,26 +548,26 @@ private void generarTablaGeneral(StringBuilder csv, String contenido) {
             datos.getOrDefault("Estado Resultado", "N/A")
         };
     }
-    
+
     private List<String[]> extraerDatosLaboratorio(String contenido) {
         List<String[]> datos = new ArrayList<>();
         // Implementación similar a extraerOrdenesDeContenido pero para datos de laboratorio
         datos.add(new String[]{"SANGRE", "15", "12", "10", "2", "1", "4.5", "01/11/2024", "24/11/2024"});
         return datos;
     }
-    
+
     private List<String[]> extraerDatosFinancieros(String contenido) {
         List<String[]> datos = new ArrayList<>();
-        datos.add(new String[]{"24/11/2024", "FAC-001", "Juan Pérez", "999888777", "EFECTIVO", 
-                               "150.00", "Pagado", "Consulta + Vacuna"});
+        datos.add(new String[]{"24/11/2024", "FAC-001", "Juan Pérez", "999888777", "EFECTIVO",
+            "150.00", "Pagado", "Consulta + Vacuna"});
         return datos;
     }
-    
+
     private List<String[]> extraerDatosVeterinarios(String contenido) {
         List<String[]> datos = new ArrayList<>();
         String[] lineas = contenido.split("\n");
         Map<String, String> vetActual = new HashMap<>();
-        
+
         for (String linea : lineas) {
             linea = linea.trim();
             if (linea.contains("Veterinario:") || linea.contains("veterinario:")) {
@@ -499,7 +576,7 @@ private void generarTablaGeneral(StringBuilder csv, String contenido) {
                     vetActual.clear();
                 }
             }
-            
+
             if (linea.contains(":")) {
                 String[] partes = linea.split(":", 2);
                 if (partes.length == 2) {
@@ -507,18 +584,18 @@ private void generarTablaGeneral(StringBuilder csv, String contenido) {
                 }
             }
         }
-        
+
         if (!vetActual.isEmpty()) {
             datos.add(construirFilaVeterinario(vetActual));
         }
-        
+
         if (datos.isEmpty()) {
             datos.add(new String[]{"1", "Dr. García", "Medicina General", "25", "5", "8", "10", "2", "20", "15"});
         }
-        
+
         return datos;
     }
-    
+
     private String[] construirFilaVeterinario(Map<String, String> datos) {
         return new String[]{
             datos.getOrDefault("ID", datos.getOrDefault("id_veterinario", "N/A")),
@@ -533,30 +610,29 @@ private void generarTablaGeneral(StringBuilder csv, String contenido) {
             datos.getOrDefault("Clientes Atendidos", datos.getOrDefault("clientes_atendidos", "0"))
         };
     }
-    
+
     // === MÉTODOS DE CÁLCULO DE ESTADÍSTICAS ===
-    
     private void generarEstadisticasEstados(StringBuilder csv, List<String[]> ordenes) {
         Map<String, Integer> conteo = new HashMap<>();
         int total = ordenes.size();
-        
+
         for (String[] orden : ordenes) {
             String estado = orden[3]; // columna de estado
             conteo.put(estado, conteo.getOrDefault(estado, 0) + 1);
         }
-        
+
         conteo.forEach((estado, cantidad) -> {
             double porcentaje = (cantidad * 100.0) / total;
             csv.append(escaparCSV(estado)).append(",")
-               .append(cantidad).append(",")
-               .append(String.format("%.1f%%", porcentaje)).append("\n");
+                    .append(cantidad).append(",")
+                    .append(String.format("%.1f%%", porcentaje)).append("\n");
         });
     }
-    
+
     private void calcularResumenLaboratorio(StringBuilder csv, List<String[]> analisis) {
         int totalAnalisis = 0;
         int totalCompletados = 0;
-        
+
         for (String[] dato : analisis) {
             try {
                 totalAnalisis += Integer.parseInt(dato[1]);
@@ -565,7 +641,7 @@ private void generarTablaGeneral(StringBuilder csv, String contenido) {
                 // ignorar
             }
         }
-        
+
         csv.append("Total Análisis,").append(totalAnalisis).append("\n");
         csv.append("Total Completados,").append(totalCompletados).append("\n");
         if (totalAnalisis > 0) {
@@ -573,11 +649,11 @@ private void generarTablaGeneral(StringBuilder csv, String contenido) {
             csv.append("Tasa de Completitud,").append(String.format("%.1f%%", tasa)).append("\n");
         }
     }
-    
+
     private void calcularResumenFinanciero(StringBuilder csv, List<String[]> facturas) {
         double totalIngresos = 0;
         int totalFacturas = facturas.size();
-        
+
         for (String[] factura : facturas) {
             try {
                 totalIngresos += Double.parseDouble(factura[5].replace(",", ""));
@@ -585,16 +661,16 @@ private void generarTablaGeneral(StringBuilder csv, String contenido) {
                 // ignorar
             }
         }
-        
+
         csv.append("Total Facturas,").append(totalFacturas).append("\n");
         csv.append("Total Ingresos,S/ ").append(String.format("%.2f", totalIngresos)).append("\n");
         csv.append("Promedio por Factura,S/ ").append(String.format("%.2f", totalIngresos / totalFacturas)).append("\n");
     }
-    
+
     private void calcularEstadisticasVeterinarios(StringBuilder csv, List<String[]> veterinarios) {
         int totalVeterinarios = veterinarios.size();
         int totalOrdenes = 0;
-        
+
         for (String[] vet : veterinarios) {
             try {
                 totalOrdenes += Integer.parseInt(vet[3]);
@@ -602,7 +678,7 @@ private void generarTablaGeneral(StringBuilder csv, String contenido) {
                 // ignorar
             }
         }
-        
+
         csv.append("Total Veterinarios Activos,").append(totalVeterinarios).append("\n");
         csv.append("Total Órdenes Generadas,").append(totalOrdenes).append("\n");
         if (totalVeterinarios > 0) {
@@ -610,20 +686,22 @@ private void generarTablaGeneral(StringBuilder csv, String contenido) {
             csv.append("Promedio Órdenes por Veterinario,").append(String.format("%.1f", promedio)).append("\n");
         }
     }
-    
+
     /**
      * Escapa caracteres especiales para CSV
      */
     private String escaparCSV(String valor) {
-        if (valor == null) return "";
-        
+        if (valor == null) {
+            return "";
+        }
+
         // Si contiene coma, comillas o saltos de línea, envolver en comillas
         if (valor.contains(",") || valor.contains("\"") || valor.contains("\n") || valor.contains("\r")) {
             // Duplicar comillas internas
             valor = valor.replace("\"", "\"\"");
             return "\"" + valor + "\"";
         }
-        
+
         return valor;
     }
 }

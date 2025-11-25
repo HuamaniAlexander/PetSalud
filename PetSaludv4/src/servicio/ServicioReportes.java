@@ -165,20 +165,36 @@ public class ServicioReportes {
         contenido.append("═══════════════════════════════════════════════════════════════════\n\n");
 
         for (Map<String, Object> orden : datos) {
+            // Obtener valores con fallback
+            String mascota = getStringValue(orden, "mascota", "nombre");
+            String telefono = getStringValue(orden, "telefono_dueno", "telefono");
+            String especialidad = getStringValue(orden, "especialidad_veterinario", "especialidad");
+
             contenido.append("ID Orden: ").append(getValueSafe(orden, "id_orden")).append("\n");
             contenido.append("Fecha: ").append(getValueSafe(orden, "fecha_orden")).append("\n");
             contenido.append("Tipo Examen: ").append(getValueSafe(orden, "tipo_examen")).append("\n");
             contenido.append("Estado: ").append(getValueSafe(orden, "estado")).append("\n");
-            contenido.append("Mascota: ").append(getValueSafe(orden, "mascota")).append(" (").append(getValueSafe(orden, "especie")).append(")\n");
+            contenido.append("Mascota: ").append(mascota).append(" (").append(getValueSafe(orden, "especie")).append(")\n");
             contenido.append("Dueño: ").append(getValueSafe(orden, "dueno")).append("\n");
-            contenido.append("Teléfono: ").append(getValueSafe(orden, "telefono_dueno")).append("\n");
-            contenido.append("Veterinario: ").append(getValueSafe(orden, "veterinario")).append(" - ").append(getValueSafe(orden, "especialidad_veterinario")).append("\n");
+            contenido.append("Teléfono: ").append(telefono).append("\n");
+            contenido.append("Veterinario: ").append(getValueSafe(orden, "veterinario")).append(" - ").append(especialidad).append("\n");
             contenido.append("Tiene Resultado: ").append(getValueSafe(orden, "tiene_resultado")).append("\n");
             contenido.append("Estado Resultado: ").append(getValueSafe(orden, "estado_resultado")).append("\n");
             contenido.append("\n───────────────────────────────────────────────────────────────────\n\n");
         }
 
         return contenido.toString();
+    }
+
+// Método auxiliar para obtener valores con fallback
+    private String getStringValue(Map<String, Object> map, String... keys) {
+        for (String key : keys) {
+            Object value = map.get(key);
+            if (value != null && !value.toString().trim().isEmpty()) {
+                return value.toString();
+            }
+        }
+        return "N/A";
     }
 
     private String construirContenidoFinanciero(List<Map<String, Object>> datos, Map<String, Object> resumen, Date fechaInicio, Date fechaFin) {

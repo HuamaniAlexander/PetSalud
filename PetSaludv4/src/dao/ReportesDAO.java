@@ -56,21 +56,61 @@ public class ReportesDAO extends GenericDAO<Object> {
         }
     }
     
-    private String normalizeKey(String key) {
-        // Convertir nombres de columnas de BD a formato esperado
-        String normalized = key.toLowerCase()
-            .replace("_", " ")
-            .trim();
-        
-        // Mapeo de claves comunes
-        switch (normalized) {
-            case "nombre mascota": return "mascota";
-            case "nombre dueno": return "dueno";
-            case "nombre veterinario": return "veterinario";
-            case "telefono dueno": return "telefono_dueno";
-            case "especialidad veterinario": return "especialidad_veterinario";
-            default: return key; // mantener original también
+private Object getValueSafe(Map<String, Object> map, String key) {
+    // Mapeo de claves alternativas
+    Map<String, String[]> alternativas = new HashMap<>();
+    alternativas.put("mascota", new String[]{"mascota", "nombre", "nombre_mascota"});
+    alternativas.put("telefono_dueno", new String[]{"telefono_dueno", "telefono", "telefono_dueno"});
+    alternativas.put("especialidad_veterinario", new String[]{"especialidad_veterinario", "especialidad", "especialidad_vet"});
+    alternativas.put("dueno", new String[]{"dueno", "nombre_dueno", "cliente"});
+    alternativas.put("veterinario", new String[]{"veterinario", "nombre_veterinario", "vet"});
+    
+    // Si tenemos alternativas para esta clave, probar todas
+    String[] posiblesClaves = alternativas.getOrDefault(key, new String[]{key});
+    
+    for (String posibleClave : posiblesClaves) {
+        // Probar con la clave exacta
+        Object value = map.get(posibleClave);
+        if (value != null && !value.toString().trim().isEmpty()) {
+            return value;
         }
+        
+        // Probar variaciones de case
+        for (String mapKey : map.keySet()) {
+            if (mapKey.equalsIgnoreCase(posibleClave)) {
+                value = map.get(mapKey);
+                if (value != null && !value.toString().trim().isEmpty()) {
+                    return value;
+                }
+            }
+        }
+    }
+    
+    // Debug más limpio
+    System.err.println("⚠ Key no encontrada: " + key + " (probadas: " + String.join(", ", posiblesClaves) + ")");
+    
+    return "N/A";
+}
+    
+    private String normalizeKey(String key) {
+        if (key == null) {
+            return "";
+        }
+
+        // Mapeo directo de claves conocidas
+        Map<String, String> mappings = new HashMap<>();
+        mappings.put("nombre", "mascota");
+        mappings.put("telefono", "telefono_dueno");
+        mappings.put("especialidad", "especialidad_veterinario");
+
+        // Si existe un mapeo directo, usarlo
+        String mapped = mappings.get(key.toLowerCase());
+        if (mapped != null) {
+            return mapped;
+        }
+
+        // Mantener el original también
+        return key;
     }
     
     public List<Map<String, Object>> reporteFinanciero(java.util.Date fechaInicio, java.util.Date fechaFin) throws SQLException {
