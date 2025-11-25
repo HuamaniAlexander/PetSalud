@@ -151,41 +151,74 @@ public class ServicioReportes {
     // ============================================
     // MÉTODOS PARA CONSTRUIR CONTENIDO
     // ============================================
-    private String construirContenidoOrdenes(List<Map<String, Object>> datos, Date fechaInicio, Date fechaFin, String estado) {
-        StringBuilder contenido = new StringBuilder();
+private String construirContenidoOrdenes(List<Map<String, Object>> datos, Date fechaInicio, Date fechaFin, String estado) {
+    StringBuilder contenido = new StringBuilder();
 
-        contenido.append("REPORTE DE ÓRDENES VETERINARIAS\n");
-        contenido.append("Período: ").append(sdf.format(fechaInicio)).append(" - ").append(sdf.format(fechaFin)).append("\n");
-        if (estado != null && !estado.isEmpty()) {
-            contenido.append("Estado filtrado: ").append(estado).append("\n");
+    contenido.append("REPORTE DE ORDENES VETERINARIAS\n");
+    contenido.append("Periodo: ").append(sdf.format(fechaInicio)).append(" - ").append(sdf.format(fechaFin)).append("\n");
+    if (estado != null && !estado.isEmpty()) {
+        contenido.append("Estado filtrado: ").append(estado).append("\n");
+    }
+    contenido.append("Total de ordenes: ").append(datos.size()).append("\n\n");
+
+    contenido.append("DETALLE DE ORDENES:\n");
+    contenido.append("═══════════════════════════════════════════════════════════════════\n\n");
+
+    // ===== DEBUG: Ver qué hay en el primer registro =====
+    if (!datos.isEmpty()) {
+        System.out.println("===== DEBUG: Primer registro =====");
+        Map<String, Object> primerRegistro = datos.get(0);
+        System.out.println("Keys disponibles: " + primerRegistro.keySet());
+        primerRegistro.forEach((k, v) -> System.out.println("  " + k + " = " + v));
+        System.out.println("===================================");
+    }
+    // ===== FIN DEBUG =====
+
+    for (Map<String, Object> orden : datos) {
+        // ✅ SOLUCIÓN: Usar los nombres EXACTOS de las columnas de la BD
+        contenido.append("ID Orden: ").append(getValueSafe(orden, "id_orden")).append("\n");
+        contenido.append("Fecha: ").append(getValueSafe(orden, "fecha_orden")).append("\n");
+        contenido.append("Tipo Examen: ").append(getValueSafe(orden, "tipo_examen")).append("\n");
+        contenido.append("Estado: ").append(getValueSafe(orden, "estado")).append("\n");
+        
+        // Para nombre de mascota: la columna se llama "nombre" según el debug
+        Object nombreMascota = orden.get("nombre");
+        if (nombreMascota == null) nombreMascota = orden.get("mascota");
+        contenido.append("Mascota: ").append(nombreMascota != null ? nombreMascota : "N/A");
+        contenido.append(" (").append(getValueSafe(orden, "especie")).append(")\n");
+        
+        contenido.append("Dueno: ").append(getValueSafe(orden, "dueno")).append("\n");
+        
+        // Teléfono: intentar ambas variantes
+        Object telefono = orden.get("telefono");
+        if (telefono == null) telefono = orden.get("telefono_dueno");
+        contenido.append("Telefono: ").append(telefono != null ? telefono : "N/A").append("\n");
+        
+        contenido.append("Veterinario: ").append(getValueSafe(orden, "veterinario")).append(" - ");
+        contenido.append(getValueSafe(orden, "especialidad")).append("\n");
+        
+        contenido.append("Tiene Resultado: ").append(getValueSafe(orden, "tiene_resultado")).append("\n");
+        contenido.append("Estado Resultado: ").append(getValueSafe(orden, "estado_resultado")).append("\n");
+        
+        // Observaciones si existen
+        Object observaciones = orden.get("observaciones");
+        if (observaciones != null && !observaciones.toString().trim().isEmpty()) {
+            contenido.append("Observaciones: ").append(observaciones).append("\n");
         }
-        contenido.append("Total de órdenes: ").append(datos.size()).append("\n\n");
-
-        contenido.append("DETALLE DE ÓRDENES:\n");
-        contenido.append("═══════════════════════════════════════════════════════════════════\n\n");
-
-        for (Map<String, Object> orden : datos) {
-            // Obtener valores con fallback
-            String mascota = getStringValue(orden, "mascota", "nombre");
-            String telefono = getStringValue(orden, "telefono_dueno", "telefono");
-            String especialidad = getStringValue(orden, "especialidad_veterinario", "especialidad");
-
-            contenido.append("ID Orden: ").append(getValueSafe(orden, "id_orden")).append("\n");
-            contenido.append("Fecha: ").append(getValueSafe(orden, "fecha_orden")).append("\n");
-            contenido.append("Tipo Examen: ").append(getValueSafe(orden, "tipo_examen")).append("\n");
-            contenido.append("Estado: ").append(getValueSafe(orden, "estado")).append("\n");
-            contenido.append("Mascota: ").append(mascota).append(" (").append(getValueSafe(orden, "especie")).append(")\n");
-            contenido.append("Dueño: ").append(getValueSafe(orden, "dueno")).append("\n");
-            contenido.append("Teléfono: ").append(telefono).append("\n");
-            contenido.append("Veterinario: ").append(getValueSafe(orden, "veterinario")).append(" - ").append(especialidad).append("\n");
-            contenido.append("Tiene Resultado: ").append(getValueSafe(orden, "tiene_resultado")).append("\n");
-            contenido.append("Estado Resultado: ").append(getValueSafe(orden, "estado_resultado")).append("\n");
-            contenido.append("\n───────────────────────────────────────────────────────────────────\n\n");
-        }
-
-        return contenido.toString();
+        
+        contenido.append("\n───────────────────────────────────────────────────────────────────\n\n");
     }
 
+    // ===== DEBUG: Ver longitud del contenido =====
+    System.out.println("===== DEBUG: Contenido construido =====");
+    System.out.println("Length: " + contenido.length());
+    System.out.println("Preview (200 chars): " + 
+        contenido.substring(0, Math.min(200, contenido.length())));
+    System.out.println("========================================");
+    // ===== FIN DEBUG =====
+
+    return contenido.toString();
+}
 // Método auxiliar para obtener valores con fallback
     private String getStringValue(Map<String, Object> map, String... keys) {
         for (String key : keys) {

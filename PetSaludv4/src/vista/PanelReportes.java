@@ -266,7 +266,7 @@ private void generarReporte(String tipoReporte, Date fechaInicio, Date fechaFin,
 
             String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
             String extension;
-            
+
             switch (formato) {
                 case "EXCEL":
                     extension = ".csv";
@@ -279,19 +279,41 @@ private void generarReporte(String tipoReporte, Date fechaInicio, Date fechaFin,
                     extension = ".pdf";
                     break;
             }
-            
+
             String nombreArchivo = "Reporte_" + tipoReporte + "_" + timestamp + extension;
             File archivo = new File(carpetaReportes, nombreArchivo);
 
-            // Para PDF, generar directamente
+            // ✅ SOLUCIÓN: Generar según el formato
             if (formato.equals("PDF")) {
+                // ===== DEBUG: VERIFICAR CONTENIDO =====
+                System.out.println("==========================================");
+                System.out.println("FORMATO: " + formato);
+                System.out.println("TIPO REPORTE: " + tipoReporte);
+                System.out.println("CONTENIDO GENERADO LENGTH: "
+                        + (contenidoGenerado != null ? contenidoGenerado.length() : "NULL"));
+                System.out.println("CONTENIDO PREVIEW (100 chars): "
+                        + (contenidoGenerado != null
+                                ? contenidoGenerado.substring(0, Math.min(100, contenidoGenerado.length()))
+                                : "NULL"));
+                System.out.println("==========================================");
+                // ===== FIN DEBUG =====
+
+                // Verificar que hay contenido
+                if (contenidoGenerado == null || contenidoGenerado.trim().isEmpty()) {
+                    throw new Exception("No se generó contenido para el reporte. Verifique los datos en la BD.");
+                }
+
+                // Para PDF: crear instancia, setear contenido Y LUEGO generar
                 FormatoPDF formatoPDF = new FormatoPDF();
                 formatoPDF.setTitulo("Reporte de " + tipoReporte);
-                formatoPDF.setContenido(contenidoGenerado);
+                formatoPDF.setContenido(contenidoGenerado);  // ← Setear ANTES
+
+                // Ahora sí generar el archivo
                 formatoPDF.generarPDF(archivo);
+
             } else {
-                // Para HTML y Excel, escribir el contenido generado
-                try (java.io.FileWriter writer = new java.io.FileWriter(archivo, 
+                // Para HTML y Excel, escribir el contenido generado directamente
+                try (java.io.FileWriter writer = new java.io.FileWriter(archivo,
                         java.nio.charset.StandardCharsets.UTF_8)) {
                     if (formato.equals("EXCEL")) {
                         writer.write("\uFEFF"); // BOM para UTF-8
