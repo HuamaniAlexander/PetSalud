@@ -212,127 +212,125 @@ public class PanelReportes extends JPanel {
         return null;
     }
 
-    private void generarReporte(String tipoReporte, Date fechaInicio, Date fechaFin, String formatoStr) {
-        JDialog dialogoProgreso = crearDialogoProgreso();
+private void generarReporte(String tipoReporte, Date fechaInicio, Date fechaFin, String formatoStr) {
+    JDialog dialogoProgreso = crearDialogoProgreso();
 
-        SwingWorker<File, Void> worker = new SwingWorker<File, Void>() {
-            @Override
-            protected File doInBackground() throws Exception {
-                Thread.sleep(500);
+    SwingWorker<File, Void> worker = new SwingWorker<File, Void>() {
+        @Override
+        protected File doInBackground() throws Exception {
+            Thread.sleep(500);
 
-                // Determinar el formato
-                IFormatoReporte formato;
-                boolean esPDF = formatoStr.contains("PDF");
-
-                if (formatoStr.contains("Excel") || formatoStr.contains("CSV")) {
-                    formato = new FormatoExcel();
-                } else if (formatoStr.contains("HTML")) {
-                    formato = new FormatoHTML();
-                } else {
-                    formato = new FormatoPDF();
-                }
-
-                // Obtener contenido del servicio
-                String contenido;
-                switch (tipoReporte) {
-                    case "ORDENES":
-                        contenido = servicioReportes.generarReporteOrdenesFormateado(
-                                fechaInicio, fechaFin, null, "TEXTO");
-                        break;
-                    case "LABORATORIO":
-                        contenido = servicioReportes.generarReporteLaboratorioFormateado(
-                                fechaInicio, fechaFin, "TEXTO");
-                        break;
-                    case "FINANCIERO":
-                        contenido = servicioReportes.generarReporteFinancieroFormateado(
-                                fechaInicio, fechaFin, "TEXTO");
-                        break;
-                    case "VETERINARIOS":
-                        contenido = servicioReportes.generarReporteVeterinariosFormateado(
-                                fechaInicio, fechaFin, "TEXTO");
-                        break;
-                    default:
-                        contenido = "Tipo de reporte no soportado";
-                }
-
-                // Crear el generador apropiado
-                GeneradorReporte generador;
-                switch (tipoReporte) {
-                    case "LABORATORIO":
-                        generador = new ReporteLaboratorio(formato);
-                        break;
-                    case "FINANCIERO":
-                        generador = new ReporteFinanciero(formato);
-                        break;
-                    case "ORDENES":
-                    default:
-                        generador = new ReporteOrdenes(formato);
-                        break;
-                }
-
-                // Configurar el generador
-                generador.setContenido(contenido);
-                generador.setPeriodo(sdf.format(fechaInicio) + " - " + sdf.format(fechaFin));
-
-                // Crear carpeta de reportes
-                File carpetaReportes = new File("reportes");
-                if (!carpetaReportes.exists()) {
-                    carpetaReportes.mkdirs();
-                }
-
-                String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-                String nombreArchivo = "Reporte_" + tipoReporte + "_" + timestamp + formato.getExtension();
-                File archivo = new File(carpetaReportes, nombreArchivo);
-
-                // Generar el reporte
-                if (esPDF) {
-                    // Para PDF, usar el método especial
-                    FormatoPDF formatoPDF = (FormatoPDF) formato;
-                    formatoPDF.generarPDF(archivo);
-                } else {
-                    // Para HTML y Excel, generar normalmente
-                    String reporteGenerado = generador.generar();
-
-                    try (java.io.FileWriter writer = new java.io.FileWriter(archivo,
-                            java.nio.charset.StandardCharsets.UTF_8)) {
-                        if (formato instanceof FormatoExcel) {
-                            writer.write("\uFEFF"); // BOM para UTF-8
-                        }
-                        writer.write(reporteGenerado);
-                    }
-                }
-
-                return archivo;
+            // Determinar el formato limpio
+            String formato;
+            if (formatoStr.contains("Excel") || formatoStr.contains("CSV")) {
+                formato = "EXCEL";
+            } else if (formatoStr.contains("HTML")) {
+                formato = "HTML";
+            } else {
+                formato = "PDF";
             }
 
-            @Override
-            protected void done() {
-                dialogoProgreso.dispose();
+            // Generar el reporte según el tipo
+            String contenidoGenerado;
+            switch (tipoReporte) {
+                case "ORDENES":
+                    contenidoGenerado = servicioReportes.generarReporteOrdenes(fechaInicio, fechaFin, null, formato);
+                    break;
+                case "LABORATORIO":
+                    contenidoGenerado = servicioReportes.generarReporteLaboratorio(fechaInicio, fechaFin, formato);
+                    break;
+                case "FINANCIERO":
+                    contenidoGenerado = servicioReportes.generarReporteFinanciero(fechaInicio, fechaFin, formato);
+                    break;
+                case "VETERINARIOS":
+                    contenidoGenerado = servicioReportes.generarReporteVeterinarios(fechaInicio, fechaFin, formato);
+                    break;
+                default:
+                    throw new Exception("Tipo de reporte no soportado: " + tipoReporte);
+            }
 
-                try {
-                    File archivo = get();
+            // Verificar si hay datos
+            if (contenidoGenerado.equals("NO_DATA")) {
+                throw new Exception("No hay datos disponibles para el período seleccionado");
+            }
+            
+            if (contenidoGenerado.startsWith("ERROR:")) {
+                throw new Exception(contenidoGenerado.substring(7));
+            }
 
-                    if (Desktop.isDesktopSupported()) {
-                        Desktop.getDesktop().open(archivo);
+            // Crear carpeta de reportes
+            File carpetaReportes = new File("reportes");
+            if (!carpetaReportes.exists()) {
+                carpetaReportes.mkdirs();
+            }
 
-                        String mensaje = "✓ Reporte generado exitosamente\n\n"
-                                + "El archivo se ha abierto en su aplicación predeterminada.\n"
-                                + "Ubicación: " + archivo.getAbsolutePath();
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String extension;
+            
+            switch (formato) {
+                case "EXCEL":
+                    extension = ".csv";
+                    break;
+                case "HTML":
+                    extension = ".html";
+                    break;
+                case "PDF":
+                default:
+                    extension = ".pdf";
+                    break;
+            }
+            
+            String nombreArchivo = "Reporte_" + tipoReporte + "_" + timestamp + extension;
+            File archivo = new File(carpetaReportes, nombreArchivo);
 
-                        JOptionPane.showMessageDialog(PanelReportes.this, mensaje,
-                                "Reporte Generado", JOptionPane.INFORMATION_MESSAGE);
+            // Para PDF, generar directamente
+            if (formato.equals("PDF")) {
+                FormatoPDF formatoPDF = new FormatoPDF();
+                formatoPDF.setTitulo("Reporte de " + tipoReporte);
+                formatoPDF.setContenido(contenidoGenerado);
+                formatoPDF.generarPDF(archivo);
+            } else {
+                // Para HTML y Excel, escribir el contenido generado
+                try (java.io.FileWriter writer = new java.io.FileWriter(archivo, 
+                        java.nio.charset.StandardCharsets.UTF_8)) {
+                    if (formato.equals("EXCEL")) {
+                        writer.write("\uFEFF"); // BOM para UTF-8
                     }
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    mostrarMensajeError("Error al generar reporte: " + e.getMessage());
+                    writer.write(contenidoGenerado);
                 }
             }
-        };
 
-        worker.execute();
-        dialogoProgreso.setVisible(true);
-    }
+            return archivo;
+        }
+
+        @Override
+        protected void done() {
+            dialogoProgreso.dispose();
+
+            try {
+                File archivo = get();
+
+                if (Desktop.isDesktopSupported()) {
+                    Desktop.getDesktop().open(archivo);
+
+                    String mensaje = "✓ Reporte generado exitosamente\n\n"
+                            + "El archivo se ha abierto en su aplicación predeterminada.\n"
+                            + "Ubicación: " + archivo.getAbsolutePath();
+
+                    JOptionPane.showMessageDialog(PanelReportes.this, mensaje,
+                            "Reporte Generado", JOptionPane.INFORMATION_MESSAGE);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                mostrarMensajeError("Error al generar reporte:\n" + e.getMessage());
+            }
+        }
+    };
+
+    worker.execute();
+    dialogoProgreso.setVisible(true);
+}
 
     private JDialog crearDialogoProgreso() {
         JDialog dialogo = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),

@@ -3,14 +3,7 @@ package dao;
 import java.sql.*;
 import java.util.*;
 
-/**
- * DAO para gestión de reportes del sistema - VERSIÓN CORREGIDA
- */
 public class ReportesDAO extends GenericDAO<Object> {
-    
-    // ============================================
-    // REPORTE DE ORDENES
-    // ============================================
     
     public List<Map<String, Object>> reporteOrdenes(java.util.Date fechaInicio, java.util.Date fechaFin, String estado) throws SQLException {
         String sql = "{CALL sp_reporte_ordenes_detallado(?, ?, ?)}";
@@ -22,25 +15,32 @@ public class ReportesDAO extends GenericDAO<Object> {
             Connection conn = getConnection();
             cs = conn.prepareCall(sql);
             
-            // Convertir java.util.Date a java.sql.Date
             cs.setDate(1, new java.sql.Date(fechaInicio.getTime()));
             cs.setDate(2, new java.sql.Date(fechaFin.getTime()));
             cs.setString(3, estado);
             
             rs = cs.executeQuery();
             
-            // Obtener metadata para saber qué columnas existen
             ResultSetMetaData metaData = rs.getMetaData();
             int columnCount = metaData.getColumnCount();
+            
+            // Debug: imprimir nombres de columnas
+            System.out.println("=== Columnas del ResultSet ===");
+            for (int i = 1; i <= columnCount; i++) {
+                System.out.println(i + ": " + metaData.getColumnName(i));
+            }
             
             while (rs.next()) {
                 Map<String, Object> fila = new LinkedHashMap<>();
                 
-                // Llenar el mapa con todas las columnas disponibles
                 for (int i = 1; i <= columnCount; i++) {
                     String columnName = metaData.getColumnName(i);
                     Object value = rs.getObject(i);
                     fila.put(columnName, value);
+                    
+                    // También agregar alias normalizados
+                    String normalizedKey = normalizeKey(columnName);
+                    fila.put(normalizedKey, value);
                 }
                 
                 resultados.add(fila);
@@ -56,9 +56,22 @@ public class ReportesDAO extends GenericDAO<Object> {
         }
     }
     
-    // ============================================
-    // REPORTE FINANCIERO
-    // ============================================
+    private String normalizeKey(String key) {
+        // Convertir nombres de columnas de BD a formato esperado
+        String normalized = key.toLowerCase()
+            .replace("_", " ")
+            .trim();
+        
+        // Mapeo de claves comunes
+        switch (normalized) {
+            case "nombre mascota": return "mascota";
+            case "nombre dueno": return "dueno";
+            case "nombre veterinario": return "veterinario";
+            case "telefono dueno": return "telefono_dueno";
+            case "especialidad veterinario": return "especialidad_veterinario";
+            default: return key; // mantener original también
+        }
+    }
     
     public List<Map<String, Object>> reporteFinanciero(java.util.Date fechaInicio, java.util.Date fechaFin) throws SQLException {
         String sql = "{CALL sp_reporte_financiero_detallado(?, ?)}";
@@ -80,7 +93,10 @@ public class ReportesDAO extends GenericDAO<Object> {
             while (rs.next()) {
                 Map<String, Object> fila = new LinkedHashMap<>();
                 for (int i = 1; i <= columnCount; i++) {
-                    fila.put(metaData.getColumnName(i), rs.getObject(i));
+                    String columnName = metaData.getColumnName(i);
+                    Object value = rs.getObject(i);
+                    fila.put(columnName, value);
+                    fila.put(normalizeKey(columnName), value);
                 }
                 resultados.add(fila);
             }
@@ -114,7 +130,10 @@ public class ReportesDAO extends GenericDAO<Object> {
                 int columnCount = metaData.getColumnCount();
                 
                 for (int i = 1; i <= columnCount; i++) {
-                    resumen.put(metaData.getColumnName(i), rs.getObject(i));
+                    String columnName = metaData.getColumnName(i);
+                    Object value = rs.getObject(i);
+                    resumen.put(columnName, value);
+                    resumen.put(normalizeKey(columnName), value);
                 }
                 return resumen;
             }
@@ -128,10 +147,6 @@ public class ReportesDAO extends GenericDAO<Object> {
             cerrarRecursos(rs, cs);
         }
     }
-    
-    // ============================================
-    // REPORTE DE LABORATORIO
-    // ============================================
     
     public List<Map<String, Object>> reporteLaboratorio(java.util.Date fechaInicio, java.util.Date fechaFin) throws SQLException {
         String sql = "{CALL sp_reporte_laboratorio_detallado(?, ?)}";
@@ -153,7 +168,10 @@ public class ReportesDAO extends GenericDAO<Object> {
             while (rs.next()) {
                 Map<String, Object> fila = new LinkedHashMap<>();
                 for (int i = 1; i <= columnCount; i++) {
-                    fila.put(metaData.getColumnName(i), rs.getObject(i));
+                    String columnName = metaData.getColumnName(i);
+                    Object value = rs.getObject(i);
+                    fila.put(columnName, value);
+                    fila.put(normalizeKey(columnName), value);
                 }
                 resultados.add(fila);
             }
@@ -167,10 +185,6 @@ public class ReportesDAO extends GenericDAO<Object> {
             cerrarRecursos(rs, cs);
         }
     }
-    
-    // ============================================
-    // REPORTE DE VETERINARIOS
-    // ============================================
     
     public List<Map<String, Object>> reporteVeterinarios(java.util.Date fechaInicio, java.util.Date fechaFin) throws SQLException {
         String sql = "{CALL sp_reporte_veterinarios(?, ?)}";
@@ -192,7 +206,10 @@ public class ReportesDAO extends GenericDAO<Object> {
             while (rs.next()) {
                 Map<String, Object> fila = new LinkedHashMap<>();
                 for (int i = 1; i <= columnCount; i++) {
-                    fila.put(metaData.getColumnName(i), rs.getObject(i));
+                    String columnName = metaData.getColumnName(i);
+                    Object value = rs.getObject(i);
+                    fila.put(columnName, value);
+                    fila.put(normalizeKey(columnName), value);
                 }
                 resultados.add(fila);
             }
@@ -206,10 +223,6 @@ public class ReportesDAO extends GenericDAO<Object> {
             cerrarRecursos(rs, cs);
         }
     }
-    
-    // ============================================
-    // REPORTE TOP CLIENTES
-    // ============================================
     
     public List<Map<String, Object>> reporteTopClientes(java.util.Date fechaInicio, java.util.Date fechaFin, int limite) throws SQLException {
         String sql = "{CALL sp_reporte_top_clientes(?, ?, ?)}";
@@ -232,7 +245,10 @@ public class ReportesDAO extends GenericDAO<Object> {
             while (rs.next()) {
                 Map<String, Object> fila = new LinkedHashMap<>();
                 for (int i = 1; i <= columnCount; i++) {
-                    fila.put(metaData.getColumnName(i), rs.getObject(i));
+                    String columnName = metaData.getColumnName(i);
+                    Object value = rs.getObject(i);
+                    fila.put(columnName, value);
+                    fila.put(normalizeKey(columnName), value);
                 }
                 resultados.add(fila);
             }
@@ -246,10 +262,6 @@ public class ReportesDAO extends GenericDAO<Object> {
             cerrarRecursos(rs, cs);
         }
     }
-    
-    // ============================================
-    // MÉTODOS NO IMPLEMENTADOS (requeridos por GenericDAO)
-    // ============================================
     
     @Override
     public Object crear(Object entity) throws SQLException {

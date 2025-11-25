@@ -45,7 +45,7 @@ public class ConfiguracionBD {
             port = properties.getProperty("db.port", "3306");
             database = properties.getProperty("db.database", "s2941_veterinaria_petsalud");
             username = properties.getProperty("db.username", "u2941_cTygsyUmv6");
-            password = properties.getProperty("db.password", "L9sVwCgwmn@LEHlegc=FogTw");
+                password = properties.getProperty("db.password", "L9sVwCgwmn@LEHlegc=FogTw");
             
         } catch (IOException e) {
             // Configuracion por defecto si no existe archivo

@@ -27,7 +27,8 @@ public class FormatoPDF implements IFormatoReporte {
     @Override
     public String generar() {
         // Nota: Este método retorna la ruta temporal del PDF, no el contenido
-        return "PDF_PLACEHOLDER_" + System.currentTimeMillis();
+        //return "PDF_PLACEHOLDER_" + System.currentTimeMillis();
+        return "";
     }
     
     @Override

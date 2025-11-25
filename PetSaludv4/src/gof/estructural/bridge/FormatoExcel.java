@@ -32,52 +32,264 @@ public class FormatoExcel implements IFormatoReporte {
         return ".csv";
     }
     
-    private String generarCSVProfesional(String contenido, String titulo) {
-        StringBuilder csv = new StringBuilder();
+private String generarCSVProfesional(String contenido, String titulo) {
+    StringBuilder csv = new StringBuilder();
+    
+    // BOM UTF-8
+    csv.append("\uFEFF");
+    
+    // === ENCABEZADO ===
+    csv.append("VETERINARIA PETSALUD\n");
+    csv.append("Sistema de Gestión Veterinaria\n");
+    csv.append("═════════════════════════════════════════\n");
+    csv.append("REPORTE:,").append(titulo).append("\n");
+    csv.append("FECHA:,").append(new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date())).append("\n");
+    csv.append("\n\n");
+    
+    // Detectar tipo y generar estructura
+    if (titulo.contains("Órdenes") || titulo.contains("ORDENES")) {
+        generarTablaOrdenes(csv, contenido);
+    } else if (titulo.contains("Laboratorio") || titulo.contains("LABORATORIO")) {
+        generarTablaLaboratorio(csv, contenido);
+    } else if (titulo.contains("Financiero") || titulo.contains("FINANCIERO")) {
+        generarTablaFinanciero(csv, contenido);
+    } else if (titulo.contains("Veterinarios") || titulo.contains("VETERINARIOS")) {
+        generarTablaVeterinarios(csv, contenido);
+    } else {
+        generarTablaGeneral(csv, contenido);
+    }
+    
+    // === PIE ===
+    csv.append("\n\n");
+    csv.append("═════════════════════════════════════════\n");
+    csv.append("Documento confidencial - Uso interno\n");
+    csv.append("Generado:,").append(new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date())).append("\n");
+    
+    return csv.toString();
+}
+
+private void generarTablaOrdenes(StringBuilder csv, String contenido) {
+    csv.append("═════════════════════════════════════════\n");
+    csv.append("TABLA DE ÓRDENES VETERINARIAS\n");
+    csv.append("═════════════════════════════════════════\n\n");
+    
+    // Encabezados de columna
+    csv.append("ID Orden,Fecha,Tipo Examen,Estado,Mascota,Especie,Dueño,Teléfono,Veterinario,Especialidad,Tiene Resultado,Estado Resultado\n");
+    
+    // Parsear contenido
+    String[] lineas = contenido.split("\n");
+    Map<String, String> ordenActual = new LinkedHashMap<>();
+    
+    for (String linea : lineas) {
+        linea = linea.trim();
         
-        // BOM UTF-8 para compatibilidad con Excel
-        csv.append("\uFEFF");
-        
-        // === ENCABEZADO CORPORATIVO ===
-        csv.append("VETERINARIA PETSALUD - SISTEMA DE GESTIÓN VETERINARIA\n");
-        csv.append("==========================================================\n");
-        csv.append("TIPO DE REPORTE:,").append(titulo).append("\n");
-        csv.append("FECHA DE GENERACIÓN:,").append(new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date())).append("\n");
-        csv.append("GENERADO POR:,Sistema Automático\n");
-        csv.append("\n");
-        
-        // Detectar tipo de reporte y generar estructura apropiada
-        if (titulo.contains("Órdenes") || titulo.contains("ORDENES")) {
-            generarEstructuraOrdenes(csv, contenido);
-        } else if (titulo.contains("Laboratorio") || titulo.contains("LABORATORIO")) {
-            generarEstructuraLaboratorio(csv, contenido);
-        } else if (titulo.contains("Financiero") || titulo.contains("FINANCIERO")) {
-            generarEstructuraFinanciero(csv, contenido);
-        } else if (titulo.contains("Veterinarios") || titulo.contains("VETERINARIOS")) {
-            generarEstructuraVeterinarios(csv, contenido);
-        } else {
-            generarEstructuraGeneral(csv, contenido);
+        if (linea.contains("ID Orden:")) {
+            if (!ordenActual.isEmpty()) {
+                escribirFilaOrden(csv, ordenActual);
+                ordenActual.clear();
+            }
         }
         
-        // === PIE DE PÁGINA ===
-        csv.append("\n");
-        csv.append("==========================================================\n");
-        csv.append("INFORMACIÓN DEL DOCUMENTO\n");
-        csv.append("==========================================================\n");
-        csv.append("Sistema:,PetSalud v4.0\n");
-        csv.append("Módulo:,Generador de Reportes\n");
-        csv.append("Formato:,CSV Estructurado para Excel\n");
-        csv.append("Codificación:,UTF-8 con BOM\n");
-        csv.append("Fecha Exportación:,").append(new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date())).append("\n");
-        csv.append("\n");
-        csv.append("NOTAS DE USO:\n");
-        csv.append("1. Abrir con Microsoft Excel para mejor visualización\n");
-        csv.append("2. Usar filtros automáticos para analizar datos\n");
-        csv.append("3. Las tablas están organizadas por secciones\n");
-        csv.append("4. Documento confidencial - Uso interno\n");
-        
-        return csv.toString();
+        if (linea.contains(":") && !linea.contains("═") && !linea.contains("─")) {
+            String[] partes = linea.split(":", 2);
+            if (partes.length == 2) {
+                String clave = partes[0].trim();
+                String valor = partes[1].trim();
+                ordenActual.put(clave, valor);
+            }
+        }
     }
+    
+    // Última orden
+    if (!ordenActual.isEmpty()) {
+        escribirFilaOrden(csv, ordenActual);
+    }
+}
+
+private void escribirFilaOrden(StringBuilder csv, Map<String, String> orden) {
+    csv.append(escaparCSV(orden.getOrDefault("ID Orden", ""))).append(",");
+    csv.append(escaparCSV(orden.getOrDefault("Fecha", ""))).append(",");
+    csv.append(escaparCSV(orden.getOrDefault("Tipo Examen", ""))).append(",");
+    csv.append(escaparCSV(orden.getOrDefault("Estado", ""))).append(",");
+    
+    // Extraer mascota y especie
+    String mascotaCompleta = orden.getOrDefault("Mascota", "");
+    String mascota = mascotaCompleta;
+    String especie = "";
+    
+    if (mascotaCompleta.contains("(") && mascotaCompleta.contains(")")) {
+        int inicio = mascotaCompleta.indexOf("(");
+        int fin = mascotaCompleta.indexOf(")");
+        mascota = mascotaCompleta.substring(0, inicio).trim();
+        especie = mascotaCompleta.substring(inicio + 1, fin).trim();
+    }
+    
+    csv.append(escaparCSV(mascota)).append(",");
+    csv.append(escaparCSV(especie)).append(",");
+    csv.append(escaparCSV(orden.getOrDefault("Dueño", orden.getOrDefault("Dueno", "")))).append(",");
+    csv.append(escaparCSV(orden.getOrDefault("Teléfono", orden.getOrDefault("Telefono", "")))).append(",");
+    
+    // Extraer veterinario y especialidad
+    String veterinarioCompleto = orden.getOrDefault("Veterinario", "");
+    String veterinario = veterinarioCompleto;
+    String especialidad = "";
+    
+    if (veterinarioCompleto.contains(" - ")) {
+        String[] partes = veterinarioCompleto.split(" - ", 2);
+        veterinario = partes[0].trim();
+        especialidad = partes.length > 1 ? partes[1].trim() : "";
+    }
+    
+    csv.append(escaparCSV(veterinario)).append(",");
+    csv.append(escaparCSV(especialidad)).append(",");
+    csv.append(escaparCSV(orden.getOrDefault("Tiene Resultado", ""))).append(",");
+    csv.append(escaparCSV(orden.getOrDefault("Estado Resultado", ""))).append("\n");
+}
+
+private void generarTablaLaboratorio(StringBuilder csv, String contenido) {
+    csv.append("═════════════════════════════════════════\n");
+    csv.append("ANÁLISIS DE LABORATORIO\n");
+    csv.append("═════════════════════════════════════════\n\n");
+    
+    csv.append("Tipo Examen,Cantidad,Completados,Validados,Pendientes,En Proceso,Tiempo Promedio (hrs),Rango Fechas\n");
+    
+    String[] lineas = contenido.split("\n");
+    Map<String, String> analisisActual = new LinkedHashMap<>();
+    
+    for (String linea : lineas) {
+        linea = linea.trim();
+        
+        if (linea.startsWith("Tipo de Examen:")) {
+            if (!analisisActual.isEmpty()) {
+                escribirFilaLaboratorio(csv, analisisActual);
+                analisisActual.clear();
+            }
+        }
+        
+        if (linea.contains(":") && !linea.contains("═")) {
+            String[] partes = linea.split(":", 2);
+            if (partes.length == 2) {
+                String clave = partes[0].trim().replace("  ", "");
+                String valor = partes[1].trim();
+                analisisActual.put(clave, valor);
+            }
+        }
+    }
+    
+    if (!analisisActual.isEmpty()) {
+        escribirFilaLaboratorio(csv, analisisActual);
+    }
+}
+
+private void escribirFilaLaboratorio(StringBuilder csv, Map<String, String> analisis) {
+    csv.append(escaparCSV(analisis.getOrDefault("Tipo de Examen", ""))).append(",");
+    csv.append(escaparCSV(analisis.getOrDefault("Cantidad", ""))).append(",");
+    csv.append(escaparCSV(analisis.getOrDefault("Completados", ""))).append(",");
+    csv.append(escaparCSV(analisis.getOrDefault("Validados", ""))).append(",");
+    csv.append(escaparCSV(analisis.getOrDefault("Pendientes", ""))).append(",");
+    csv.append(escaparCSV(analisis.getOrDefault("En Proceso", ""))).append(",");
+    csv.append(escaparCSV(analisis.getOrDefault("Tiempo Promedio", ""))).append(",");
+    csv.append(escaparCSV(analisis.getOrDefault("Rango", ""))).append("\n");
+}
+
+private void generarTablaFinanciero(StringBuilder csv, String contenido) {
+    csv.append("═════════════════════════════════════════\n");
+    csv.append("RESUMEN FINANCIERO\n");
+    csv.append("═════════════════════════════════════════\n\n");
+    
+    csv.append("ID Factura,Fecha,Cliente,Teléfono,Método Pago,Monto,Estado,Servicios\n");
+    
+    String[] lineas = contenido.split("\n");
+    Map<String, String> facturaActual = new LinkedHashMap<>();
+    
+    for (String linea : lineas) {
+        linea = linea.trim();
+        
+        if (linea.startsWith("Factura #")) {
+            if (!facturaActual.isEmpty()) {
+                escribirFilaFinanciero(csv, facturaActual);
+                facturaActual.clear();
+            }
+            facturaActual.put("ID Factura", linea.replace("Factura #", ""));
+        }
+        
+        if (linea.contains(":") && !linea.contains("═") && !linea.contains("─")) {
+            String[] partes = linea.split(":", 2);
+            if (partes.length == 2) {
+                String clave = partes[0].trim();
+                String valor = partes[1].trim();
+                facturaActual.put(clave, valor);
+            }
+        }
+    }
+    
+    if (!facturaActual.isEmpty()) {
+        escribirFilaFinanciero(csv, facturaActual);
+    }
+}
+
+private void escribirFilaFinanciero(StringBuilder csv, Map<String, String> factura) {
+    csv.append(escaparCSV(factura.getOrDefault("ID Factura", ""))).append(",");
+    csv.append(escaparCSV(factura.getOrDefault("Fecha", ""))).append(",");
+    csv.append(escaparCSV(factura.getOrDefault("Cliente", ""))).append(",");
+    csv.append(escaparCSV(factura.getOrDefault("Teléfono", factura.getOrDefault("Telefono", "")))).append(",");
+    csv.append(escaparCSV(factura.getOrDefault("Método de Pago", ""))).append(",");
+    csv.append(escaparCSV(factura.getOrDefault("Monto", ""))).append(",");
+    csv.append(escaparCSV(factura.getOrDefault("Estado", ""))).append(",");
+    csv.append(escaparCSV(factura.getOrDefault("Servicios", ""))).append("\n");
+}
+
+private void generarTablaVeterinarios(StringBuilder csv, String contenido) {
+    csv.append("═════════════════════════════════════════\n");
+    csv.append("DESEMPEÑO DE VETERINARIOS\n");
+    csv.append("═════════════════════════════════════════\n\n");
+    
+    csv.append("Veterinario,Especialidad,Total Órdenes,Pendientes,En Proceso,Completadas,Validadas,Mascotas Atendidas,Clientes Atendidos\n");
+    
+    String[] lineas = contenido.split("\n");
+    Map<String, String> vetActual = new LinkedHashMap<>();
+    
+    for (String linea : lineas) {
+        linea = linea.trim();
+        
+        if (linea.startsWith("Veterinario:")) {
+            if (!vetActual.isEmpty()) {
+                escribirFilaVeterinario(csv, vetActual);
+                vetActual.clear();
+            }
+        }
+        
+        if (linea.contains(":") && !linea.contains("═") && !linea.contains("─")) {
+            String[] partes = linea.split(":", 2);
+            if (partes.length == 2) {
+                String clave = partes[0].trim().replace("  - ", "").replace("  ", "");
+                String valor = partes[1].trim();
+                vetActual.put(clave, valor);
+            }
+        }
+    }
+    
+    if (!vetActual.isEmpty()) {
+        escribirFilaVeterinario(csv, vetActual);
+    }
+}
+
+private void escribirFilaVeterinario(StringBuilder csv, Map<String, String> vet) {
+    csv.append(escaparCSV(vet.getOrDefault("Veterinario", ""))).append(",");
+    csv.append(escaparCSV(vet.getOrDefault("Especialidad", ""))).append(",");
+    csv.append(escaparCSV(vet.getOrDefault("Total Órdenes", vet.getOrDefault("Total Ordenes", "")))).append(",");
+    csv.append(escaparCSV(vet.getOrDefault("Pendientes", ""))).append(",");
+    csv.append(escaparCSV(vet.getOrDefault("En Proceso", ""))).append(",");
+    csv.append(escaparCSV(vet.getOrDefault("Completadas", ""))).append(",");
+    csv.append(escaparCSV(vet.getOrDefault("Validadas", ""))).append(",");
+    csv.append(escaparCSV(vet.getOrDefault("Mascotas Atendidas", ""))).append(",");
+    csv.append(escaparCSV(vet.getOrDefault("Clientes Atendidos", ""))).append("\n");
+}
+
+private void generarTablaGeneral(StringBuilder csv, String contenido) {
+    csv.append("CONTENIDO DEL REPORTE\n\n");
+    csv.append(contenido.replace("\n", "\n"));
+}
     
     private void generarEstructuraOrdenes(StringBuilder csv, String contenido) {
         csv.append("==========================================================\n");
