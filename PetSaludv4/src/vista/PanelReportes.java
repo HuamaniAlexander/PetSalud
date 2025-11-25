@@ -285,31 +285,15 @@ private void generarReporte(String tipoReporte, Date fechaInicio, Date fechaFin,
 
             // ✅ SOLUCIÓN: Generar según el formato
             if (formato.equals("PDF")) {
-                // ===== DEBUG: VERIFICAR CONTENIDO =====
-                System.out.println("==========================================");
-                System.out.println("FORMATO: " + formato);
-                System.out.println("TIPO REPORTE: " + tipoReporte);
-                System.out.println("CONTENIDO GENERADO LENGTH: "
-                        + (contenidoGenerado != null ? contenidoGenerado.length() : "NULL"));
-                System.out.println("CONTENIDO PREVIEW (100 chars): "
-                        + (contenidoGenerado != null
-                                ? contenidoGenerado.substring(0, Math.min(100, contenidoGenerado.length()))
-                                : "NULL"));
-                System.out.println("==========================================");
-                // ===== FIN DEBUG =====
+    // contenidoGenerado YA ES EL STRING DEL CONTENIDO
+    if (contenidoGenerado == null || contenidoGenerado.trim().isEmpty()) {
+        throw new Exception("No se generó contenido para el reporte. Verifique los datos en la BD.");
+    }
 
-                // Verificar que hay contenido
-                if (contenidoGenerado == null || contenidoGenerado.trim().isEmpty()) {
-                    throw new Exception("No se generó contenido para el reporte. Verifique los datos en la BD.");
-                }
-
-                // Para PDF: crear instancia, setear contenido Y LUEGO generar
-                FormatoPDF formatoPDF = new FormatoPDF();
-                formatoPDF.setTitulo("Reporte de " + tipoReporte);
-                formatoPDF.setContenido(contenidoGenerado);  // ← Setear ANTES
-
-                // Ahora sí generar el archivo
-                formatoPDF.generarPDF(archivo);
+    FormatoPDF formatoPDF = new FormatoPDF();
+    formatoPDF.setTitulo("Reporte de " + tipoReporte);
+    formatoPDF.setContenido(contenidoGenerado);
+    formatoPDF.generarPDF(archivo);
 
             } else {
                 // Para HTML y Excel, escribir el contenido generado directamente

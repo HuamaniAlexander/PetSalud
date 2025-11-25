@@ -19,48 +19,57 @@ public class ServicioReportes {
     // ============================================
     // MÉTODOS PRINCIPALES - GENERAN REPORTES DIRECTAMENTE
     // ============================================
-    public String generarReporteOrdenes(Date fechaInicio, Date fechaFin, String estado, String formato) {
-        try {
-            List<Map<String, Object>> datos = reportesDAO.reporteOrdenes(fechaInicio, fechaFin, estado);
+public String generarReporteOrdenes(Date fechaInicio, Date fechaFin, String estado, String formato) {
+    try {
+        List<Map<String, Object>> datos = reportesDAO.reporteOrdenes(fechaInicio, fechaFin, estado);
 
-            if (datos.isEmpty()) {
-                return "NO_DATA";
-            }
-
-            IFormatoReporte formatoReporte = obtenerFormato(formato);
-            ReporteOrdenes generador = new ReporteOrdenes(formatoReporte);
-
-            // Construir contenido estructurado
-            String contenido = construirContenidoOrdenes(datos, fechaInicio, fechaFin, estado);
-            generador.setContenido(contenido);
-            generador.setPeriodo(sdf.format(fechaInicio) + " - " + sdf.format(fechaFin));
-
-            // Estadísticas
-            int totalOrdenes = datos.size();
-            int pendientes = 0, completadas = 0;
-
-            for (Map<String, Object> orden : datos) {
-                String estadoOrden = getValueSafe(orden, "estado").toString();
-                if (estadoOrden.contains("PENDIENTE")) {
-                    pendientes++;
-                }
-                if (estadoOrden.contains("COMPLETADA") || estadoOrden.contains("VALIDADA") || estadoOrden.contains("ENTREGADA")) {
-                    completadas++;
-                }
-            }
-
-            generador.setTotalOrdenes(totalOrdenes);
-            generador.setPendientes(pendientes);
-            generador.setCompletadas(completadas);
-
-            return generador.generar();
-
-        } catch (SQLException e) {
-            System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
-            return "ERROR: " + e.getMessage();
+        if (datos.isEmpty()) {
+            return "NO_DATA";
         }
+
+        // ✅ CONSTRUIR CONTENIDO DIRECTAMENTE
+        String contenido = construirContenidoOrdenes(datos, fechaInicio, fechaFin, estado);
+        
+        // ✅ DEBUG: VERIFICAR QUE SE GENERÓ
+        System.out.println("✅ CONTENIDO CONSTRUIDO: " + contenido.length() + " caracteres");
+        System.out.println("📄 PREVIEW: " + contenido.substring(0, Math.min(200, contenido.length())));
+        
+        // ✅ PARA PDF: RETORNAR EL CONTENIDO DIRECTAMENTE
+        if ("PDF".equalsIgnoreCase(formato)) {
+            return contenido;  // ← ESTO ES LO IMPORTANTE
+        }
+        
+        // Para otros formatos, usar el generador Bridge
+        IFormatoReporte formatoReporte = obtenerFormato(formato);
+        ReporteOrdenes generador = new ReporteOrdenes(formatoReporte);
+        
+        generador.setContenido(contenido);
+        generador.setPeriodo(sdf.format(fechaInicio) + " - " + sdf.format(fechaFin));
+        
+        // Estadísticas
+        int totalOrdenes = datos.size();
+        int pendientes = 0, completadas = 0;
+        
+        for (Map<String, Object> orden : datos) {
+            String estadoOrden = getValueSafe(orden, "estado").toString();
+            if (estadoOrden.contains("PENDIENTE")) pendientes++;
+            if (estadoOrden.contains("COMPLETADA") || estadoOrden.contains("VALIDADA") || estadoOrden.contains("ENTREGADA")) {
+                completadas++;
+            }
+        }
+        
+        generador.setTotalOrdenes(totalOrdenes);
+        generador.setPendientes(pendientes);
+        generador.setCompletadas(completadas);
+        
+        return generador.generar();
+        
+    } catch (SQLException e) {
+        System.err.println("Error: " + e.getMessage());
+        e.printStackTrace();
+        return "ERROR: " + e.getMessage();
     }
+}
 
     public String generarReporteFinanciero(Date fechaInicio, Date fechaFin, String formato) {
         try {
@@ -160,62 +169,40 @@ private String construirContenidoOrdenes(List<Map<String, Object>> datos, Date f
         contenido.append("Estado filtrado: ").append(estado).append("\n");
     }
     contenido.append("Total de ordenes: ").append(datos.size()).append("\n\n");
-
     contenido.append("DETALLE DE ORDENES:\n");
     contenido.append("═══════════════════════════════════════════════════════════════════\n\n");
 
-    // ===== DEBUG: Ver qué hay en el primer registro =====
-    if (!datos.isEmpty()) {
-        System.out.println("===== DEBUG: Primer registro =====");
-        Map<String, Object> primerRegistro = datos.get(0);
-        System.out.println("Keys disponibles: " + primerRegistro.keySet());
-        primerRegistro.forEach((k, v) -> System.out.println("  " + k + " = " + v));
-        System.out.println("===================================");
-    }
-    // ===== FIN DEBUG =====
-
     for (Map<String, Object> orden : datos) {
-        // ✅ SOLUCIÓN: Usar los nombres EXACTOS de las columnas de la BD
+        // ✅ USAR NOMBRES EXACTOS DEL RESULTSET
         contenido.append("ID Orden: ").append(getValueSafe(orden, "id_orden")).append("\n");
         contenido.append("Fecha: ").append(getValueSafe(orden, "fecha_orden")).append("\n");
         contenido.append("Tipo Examen: ").append(getValueSafe(orden, "tipo_examen")).append("\n");
         contenido.append("Estado: ").append(getValueSafe(orden, "estado")).append("\n");
         
-        // Para nombre de mascota: la columna se llama "nombre" según el debug
-        Object nombreMascota = orden.get("nombre");
-        if (nombreMascota == null) nombreMascota = orden.get("mascota");
-        contenido.append("Mascota: ").append(nombreMascota != null ? nombreMascota : "N/A");
+        // Mascota: columna es "nombre"
+        contenido.append("Mascota: ").append(getValueSafe(orden, "nombre"));
         contenido.append(" (").append(getValueSafe(orden, "especie")).append(")\n");
         
         contenido.append("Dueno: ").append(getValueSafe(orden, "dueno")).append("\n");
         
-        // Teléfono: intentar ambas variantes
-        Object telefono = orden.get("telefono");
-        if (telefono == null) telefono = orden.get("telefono_dueno");
-        contenido.append("Telefono: ").append(telefono != null ? telefono : "N/A").append("\n");
+        // Teléfono: columna es "telefono"
+        contenido.append("Telefono: ").append(getValueSafe(orden, "telefono")).append("\n");
         
-        contenido.append("Veterinario: ").append(getValueSafe(orden, "veterinario")).append(" - ");
-        contenido.append(getValueSafe(orden, "especialidad")).append("\n");
+        // Veterinario y especialidad
+        contenido.append("Veterinario: ").append(getValueSafe(orden, "veterinario"));
+        contenido.append(" - ").append(getValueSafe(orden, "especialidad")).append("\n");
         
         contenido.append("Tiene Resultado: ").append(getValueSafe(orden, "tiene_resultado")).append("\n");
         contenido.append("Estado Resultado: ").append(getValueSafe(orden, "estado_resultado")).append("\n");
         
         // Observaciones si existen
-        Object observaciones = orden.get("observaciones");
-        if (observaciones != null && !observaciones.toString().trim().isEmpty()) {
-            contenido.append("Observaciones: ").append(observaciones).append("\n");
+        Object obs = orden.get("observaciones");
+        if (obs != null && !obs.toString().trim().isEmpty()) {
+            contenido.append("Observaciones: ").append(obs).append("\n");
         }
         
         contenido.append("\n───────────────────────────────────────────────────────────────────\n\n");
     }
-
-    // ===== DEBUG: Ver longitud del contenido =====
-    System.out.println("===== DEBUG: Contenido construido =====");
-    System.out.println("Length: " + contenido.length());
-    System.out.println("Preview (200 chars): " + 
-        contenido.substring(0, Math.min(200, contenido.length())));
-    System.out.println("========================================");
-    // ===== FIN DEBUG =====
 
     return contenido.toString();
 }
