@@ -75,7 +75,7 @@ public class ConfiguracionBD {
     public String getJdbcUrl() {
         switch(dbType.toLowerCase()) {
             case "mysql":
-                return String.format("jdbc:mysql://%s:%s/%s?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true",
+                return String.format("jdbc:mysql://%s:%s/%s?useSSL=false&serverTimezone=America/Lima&allowPublicKeyRetrieval=true",
                         host, port, database);
             case "postgresql":
                 return String.format("jdbc:postgresql://%s:%s/%s", host, port, database);
