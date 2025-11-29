@@ -110,12 +110,12 @@ public String generarReporteOrdenes(Date fechaInicio, Date fechaFin, String esta
                 return "NO_DATA";
             }
 
-            System.out.println("✅ Reporte Laboratorio - Datos recibidos: " + datos.size() + " registros");
+            System.out.println("Reporte Laboratorio - Datos recibidos: " + datos.size() + " registros");
 
             String contenido = construirContenidoLaboratorio(datos, fechaInicio, fechaFin);
 
-            System.out.println("✅ CONTENIDO LABORATORIO: " + contenido.length() + " caracteres");
-            System.out.println("📄 PREVIEW LAB: " + contenido.substring(0, Math.min(200, contenido.length())));
+            System.out.println("CONTENIDO LABORATORIO: " + contenido.length() + " caracteres");
+            System.out.println("�PREVIEW LAB: " + contenido.substring(0, Math.min(200, contenido.length())));
 
             if ("PDF".equalsIgnoreCase(formato)) {
                 return contenido;  // ← IMPORTANTE: igual que en reporteOrdenes
@@ -139,35 +139,52 @@ public String generarReporteOrdenes(Date fechaInicio, Date fechaFin, String esta
             return generador.generar();
 
         } catch (SQLException e) {
-            System.err.println("❌ Error en reporteLaboratorio: " + e.getMessage());
+            System.err.println("Error en reporteLaboratorio: " + e.getMessage());
             e.printStackTrace();
             return "ERROR: " + e.getMessage();
         }
     }
 
     public String generarReporteVeterinarios(Date fechaInicio, Date fechaFin, String formato) {
-        try {
-            List<Map<String, Object>> datos = reportesDAO.reporteVeterinarios(fechaInicio, fechaFin);
+    try {
+        List<Map<String, Object>> datos = reportesDAO.reporteVeterinarios(fechaInicio, fechaFin);
 
-            if (datos.isEmpty()) {
-                return "NO_DATA";
-            }
-
-            IFormatoReporte formatoReporte = obtenerFormato(formato);
-            ReporteOrdenes generador = new ReporteOrdenes(formatoReporte);
-
-            String contenido = construirContenidoVeterinarios(datos, fechaInicio, fechaFin);
-            generador.setContenido(contenido);
-            generador.setPeriodo(sdf.format(fechaInicio) + " - " + sdf.format(fechaFin));
-
-            return generador.generar();
-
-        } catch (SQLException e) {
-            System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
-            return "ERROR: " + e.getMessage();
+        if (datos == null || datos.isEmpty()) {
+            return "NO_DATA";
         }
+
+        String contenido = construirContenidoVeterinarios(datos, fechaInicio, fechaFin);
+        
+        System.out.println("✅ CONTENIDO VETERINARIOS: " + contenido.length() + " caracteres");
+
+        // ✅ SIEMPRE RETORNAR CONTENIDO PARA PDF (COMO LOS OTROS MÉTODOS)
+        if ("PDF".equalsIgnoreCase(formato)) {
+            return contenido;
+        }
+
+        // ✅ PARA OTROS FORMATOS, USAR ReporteLaboratorio COMO CONTENEDOR GENÉRICO
+        IFormatoReporte formatoReporte = obtenerFormato(formato);
+        ReporteLaboratorio generador = new ReporteLaboratorio(formatoReporte);
+
+        generador.setContenido(contenido);
+        generador.setPeriodo(sdf.format(fechaInicio) + " - " + sdf.format(fechaFin));
+
+        // Opcional: agregar estadísticas como "análisis"
+        List<String> resumenVeterinarios = new ArrayList<>();
+        for (Map<String, Object> vet : datos) {
+            resumenVeterinarios.add(getValueSafe(vet, "veterinario") + " - " 
+                    + getValueSafe(vet, "total_ordenes") + " órdenes");
+        }
+        generador.setAnalisis(resumenVeterinarios);
+
+        return generador.generar();
+
+    } catch (SQLException e) {
+        System.err.println("❌ Error en reporteVeterinarios: " + e.getMessage());
+        e.printStackTrace();
+        return "ERROR: " + e.getMessage();
     }
+}
 
     // ============================================
     // MÉTODOS PARA CONSTRUIR CONTENIDO
