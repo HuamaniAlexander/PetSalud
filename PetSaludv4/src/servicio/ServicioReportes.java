@@ -72,35 +72,50 @@ public String generarReporteOrdenes(Date fechaInicio, Date fechaFin, String esta
 }
 
     public String generarReporteFinanciero(Date fechaInicio, Date fechaFin, String formato) {
-        try {
-            List<Map<String, Object>> datos = reportesDAO.reporteFinanciero(fechaInicio, fechaFin);
-            Map<String, Object> resumen = reportesDAO.resumenFinanciero(fechaInicio, fechaFin);
+    try {
+        List<Map<String, Object>> datos = reportesDAO.reporteFinanciero(fechaInicio, fechaFin);
+        Map<String, Object> resumen = reportesDAO.resumenFinanciero(fechaInicio, fechaFin);
 
-            if (datos.isEmpty()) {
-                return "NO_DATA";
-            }
-
-            IFormatoReporte formatoReporte = obtenerFormato(formato);
-            ReporteFinanciero generador = new ReporteFinanciero(formatoReporte);
-
-            String contenido = construirContenidoFinanciero(datos, resumen, fechaInicio, fechaFin);
-            generador.setContenido(contenido);
-            generador.setPeriodo(sdf.format(fechaInicio) + " - " + sdf.format(fechaFin));
-
-            double ingresos = getDouble(resumen, "total_pagado");
-            double egresos = 0.0;
-
-            generador.setIngresos(ingresos);
-            generador.setEgresos(egresos);
-
-            return generador.generar();
-
-        } catch (SQLException e) {
-            System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
-            return "ERROR: " + e.getMessage();
+        if (datos.isEmpty()) {
+            return "NO_DATA";
         }
+
+        // ✅ CONSTRUIR CONTENIDO DIRECTAMENTE
+        String contenido = construirContenidoFinanciero(datos, resumen, fechaInicio, fechaFin);
+
+        // ✅ DEBUG: VERIFICAR CONTENIDO
+        System.out.println("✅ CONTENIDO FINANCIERO CONSTRUIDO: " + contenido.length() + " caracteres");
+        System.out.println("💰 PREVIEW: " + contenido.substring(0, Math.min(200, contenido.length())));
+
+        // ✅ PARA PDF: RETORNAR EL CONTENIDO DIRECTAMENTE
+        if ("PDF".equalsIgnoreCase(formato)) {
+            return contenido;
+        }
+
+        // ✅ PARA OTROS FORMATOS, USAR ReporteLaboratorio COMO CONTENEDOR GENÉRICO
+        IFormatoReporte formatoReporte = obtenerFormato(formato);
+        ReporteLaboratorio generador = new ReporteLaboratorio(formatoReporte);
+
+        generador.setContenido(contenido);
+        generador.setPeriodo(sdf.format(fechaInicio) + " - " + sdf.format(fechaFin));
+
+        // ✅ AGREGAR ESTADÍSTICAS COMO "ANÁLISIS"
+        List<String> resumenFinanciero = new ArrayList<>();
+        resumenFinanciero.add("Total Facturas: " + getValueSafe(resumen, "total_facturas"));
+        resumenFinanciero.add(String.format("Total Facturado: S/ %.2f", getDouble(resumen, "total_facturado")));
+        resumenFinanciero.add(String.format("Total Pagado: S/ %.2f", getDouble(resumen, "total_pagado")));
+        resumenFinanciero.add(String.format("Total Pendiente: S/ %.2f", getDouble(resumen, "total_pendiente")));
+
+        generador.setAnalisis(resumenFinanciero);
+
+        return generador.generar();
+
+    } catch (SQLException e) {
+        System.err.println("❌ Error en reporteFinanciero: " + e.getMessage());
+        e.printStackTrace();
+        return "ERROR: " + e.getMessage();
     }
+}
 
     public String generarReporteLaboratorio(Date fechaInicio, Date fechaFin, String formato) {
             try {
@@ -186,6 +201,8 @@ public String generarReporteOrdenes(Date fechaInicio, Date fechaFin, String esta
     }
 }
 
+    
+    
     // ============================================
     // MÉTODOS PARA CONSTRUIR CONTENIDO
     // ============================================
@@ -247,46 +264,66 @@ private String construirContenidoOrdenes(List<Map<String, Object>> datos, Date f
     }
 
     private String construirContenidoFinanciero(List<Map<String, Object>> datos, Map<String, Object> resumen, Date fechaInicio, Date fechaFin) {
-        StringBuilder contenido = new StringBuilder();
+    StringBuilder contenido = new StringBuilder();
 
-        contenido.append("REPORTE FINANCIERO\n");
-        contenido.append("Período: ").append(sdf.format(fechaInicio)).append(" - ").append(sdf.format(fechaFin)).append("\n\n");
+    contenido.append("REPORTE FINANCIERO - VETERINARIA PETSALUD\n");
+    contenido.append("═══════════════════════════════════════════════════════════════════\n");
+    contenido.append("PERIODO: ").append(sdf.format(fechaInicio)).append(" - ").append(sdf.format(fechaFin)).append("\n\n");
+    
+    contenido.append("RESUMEN GENERAL\n");
+    contenido.append("Total Facturas: ").append(getValueSafe(resumen, "total_facturas")).append("\n");
+    contenido.append(String.format("Total Facturado: S/ %.2f\n", getDouble(resumen, "total_facturado")));
+    contenido.append(String.format("Total Pagado: S/ %.2f\n", getDouble(resumen, "total_pagado")));
+    contenido.append(String.format("Total Pendiente: S/ %.2f\n", getDouble(resumen, "total_pendiente")));
+    contenido.append(String.format("Promedio por Factura: S/ %.2f\n\n", getDouble(resumen, "promedio_factura")));
 
-        contenido.append("RESUMEN GENERAL:\n");
-        contenido.append("═══════════════════════════════════════════════════════════════════\n");
-        contenido.append(String.format("Total Facturas: %s\n", getValueSafe(resumen, "total_facturas")));
-        contenido.append(String.format("Total Facturado: S/ %.2f\n", getDouble(resumen, "total_facturado")));
-        contenido.append(String.format("Total Pagado: S/ %.2f\n", getDouble(resumen, "total_pagado")));
-        contenido.append(String.format("Total Pendiente: S/ %.2f\n", getDouble(resumen, "total_pendiente")));
-        contenido.append(String.format("Promedio por Factura: S/ %.2f\n\n", getDouble(resumen, "promedio_factura")));
+    contenido.append("DISTRIBUCIÓN POR MÉTODO DE PAGO\n");
+    contenido.append(String.format("Efectivo: S/ %.2f\n", getDouble(resumen, "total_efectivo")));
+    contenido.append(String.format("Tarjeta: S/ %.2f\n", getDouble(resumen, "total_tarjeta")));
+    contenido.append(String.format("Transferencia: S/ %.2f\n\n", getDouble(resumen, "total_transferencia")));
 
-        contenido.append("DISTRIBUCIÓN POR MÉTODO DE PAGO:\n");
-        contenido.append(String.format("Efectivo: S/ %.2f\n", getDouble(resumen, "total_efectivo")));
-        contenido.append(String.format("Tarjeta: S/ %.2f\n", getDouble(resumen, "total_tarjeta")));
-        contenido.append(String.format("Transferencia: S/ %.2f\n", getDouble(resumen, "total_transferencia")));
-        contenido.append("═══════════════════════════════════════════════════════════════════\n\n");
+    contenido.append("DETALLE DE FACTURAS\n");
+    contenido.append("═══════════════════════════════════════════════════════════════════\n\n");
 
-        contenido.append("DETALLE DE FACTURAS:\n");
-        contenido.append("───────────────────────────────────────────────────────────────────\n\n");
+    int contador = 0;
+    for (Map<String, Object> factura : datos) {
+        contador++;
+        contenido.append("FACTURA #").append(contador).append("\n");
+        contenido.append("ID Factura: ").append(getValueSafe(factura, "id_factura")).append("\n");
+        contenido.append("Fecha: ").append(getValueSafe(factura, "fecha")).append("\n");
+        contenido.append("Cliente: ").append(getValueSafe(factura, "cliente")).append("\n");
+        contenido.append("Teléfono: ").append(getValueSafe(factura, "telefono")).append("\n");
+        contenido.append("Método de Pago: ").append(getValueSafe(factura, "metodo_pago")).append("\n");
+        contenido.append(String.format("Monto Total: S/ %.2f\n", getDouble(factura, "monto_total")));
+        contenido.append("Estado Pago: ").append(getValueSafe(factura, "estado_pago")).append("\n");
 
-        for (Map<String, Object> factura : datos) {
-            contenido.append("Factura #").append(getValueSafe(factura, "id_factura")).append("\n");
-            contenido.append("Fecha: ").append(getValueSafe(factura, "fecha")).append("\n");
-            contenido.append("Cliente: ").append(getValueSafe(factura, "cliente")).append("\n");
-            contenido.append("Teléfono: ").append(getValueSafe(factura, "telefono")).append("\n");
-            contenido.append("Método de Pago: ").append(getValueSafe(factura, "metodo_pago")).append("\n");
-            contenido.append(String.format("Monto: S/ %.2f\n", getDouble(factura, "monto_total")));
-            contenido.append("Estado: ").append(getValueSafe(factura, "estado_pago")).append("\n");
-
-            Object servicios = factura.get("servicios");
-            if (servicios != null && !servicios.toString().isEmpty()) {
-                contenido.append("Servicios: ").append(servicios).append("\n");
-            }
-            contenido.append("\n───────────────────────────────────────────────────────────────────\n\n");
+        Object servicios = factura.get("servicios");
+        if (servicios != null && !servicios.toString().isEmpty()) {
+            contenido.append("Servicios: ").append(servicios).append("\n");
         }
-
-        return contenido.toString();
+        contenido.append("\n");
     }
+
+    // ✅ RESUMEN FINAL
+    contenido.append("═══════════════════════════════════════════════════════════════════\n");
+    contenido.append("RESUMEN EJECUTIVO\n");
+    contenido.append(String.format("Total de facturas procesadas: %d\n", datos.size()));
+    
+    double totalPagado = getDouble(resumen, "total_pagado");
+    double totalPendiente = getDouble(resumen, "total_pendiente");
+    double totalGeneral = totalPagado + totalPendiente;
+    
+    if (totalGeneral > 0) {
+        double porcentajePagado = (totalPagado / totalGeneral) * 100;
+        contenido.append(String.format("Tasa de cobranza: %.1f%%\n", porcentajePagado));
+    }
+    
+    contenido.append(String.format("Ingresos confirmados: S/ %.2f\n", totalPagado));
+    contenido.append(String.format("Por cobrar: S/ %.2f\n", totalPendiente));
+    contenido.append("═══════════════════════════════════════════════════════════════════\n");
+
+    return contenido.toString();
+}
 
     private String construirContenidoLaboratorio(List<Map<String, Object>> datos, Date fechaInicio, Date fechaFin) {
     StringBuilder contenido = new StringBuilder();

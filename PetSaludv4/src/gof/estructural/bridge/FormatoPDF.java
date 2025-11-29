@@ -45,18 +45,16 @@ public class FormatoPDF implements IFormatoReporte {
         PDDocument document = new PDDocument();
 
         try {
-            // Verificar que tenemos contenido
             if (this.contenido == null || this.contenido.isEmpty()) {
                 throw new IOException("No hay contenido para generar el PDF");
             }
 
-            // Crear primera página A4
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
 
             PDPageContentStream contentStream = new PDPageContentStream(document, page);
 
-            // Configuración de márgenes y posición inicial
+            // Configuración
             float margin = 50;
             float width = page.getMediaBox().getWidth() - 2 * margin;
             float yPosition = page.getMediaBox().getHeight() - margin;
@@ -68,7 +66,7 @@ public class FormatoPDF implements IFormatoReporte {
             PDType1Font fontNormal = PDType1Font.HELVETICA;
             PDType1Font fontNegrita = PDType1Font.HELVETICA_BOLD;
 
-            // === ENCABEZADO PREMIUM ===
+            // === ENCABEZADO ===
             contentStream.setNonStrokingColor(52, 168, 83);
             contentStream.addRect(margin, yPosition - 30, width, 30);
             contentStream.fill();
@@ -116,23 +114,16 @@ public class FormatoPDF implements IFormatoReporte {
 
             yPosition -= 20;
 
-            // === PROCESAR CONTENIDO LÍNEA POR LÍNEA ===
-            contentStream.setFont(fontNormal, 9);
+            // === CONTENIDO PRINCIPAL MEJORADO ===
+            contentStream.setFont(fontNormal, 10);
             contentStream.setNonStrokingColor(0, 0, 0);
 
             String[] lineas = this.contenido.split("\n");
-            float lineHeight = 12;
+            float lineHeight = 14;
             boolean enTabla = false;
-            int contadorLineas = 0;
 
             for (String linea : lineas) {
                 String lineaLimpia = filtrarCaracteresPDF(linea.trim());
-
-                // Saltar líneas vacías
-                if (lineaLimpia.isEmpty()) {
-                    yPosition -= lineHeight / 2;
-                    continue;
-                }
 
                 // Verificar si necesita nueva página
                 if (yPosition < pageBottom) {
@@ -141,30 +132,42 @@ public class FormatoPDF implements IFormatoReporte {
                     document.addPage(page);
                     contentStream = new PDPageContentStream(document, page);
                     yPosition = page.getMediaBox().getHeight() - margin;
-                    contentStream.setFont(fontNormal, 9);
+                    contentStream.setFont(fontNormal, 10);
                     contentStream.setNonStrokingColor(0, 0, 0);
                 }
 
-                // Detectar títulos de sección
-                if (lineaLimpia.matches(".*REPORTE.*|.*DETALLE.*|.*ORDENES.*")
-                        && !lineaLimpia.contains(":") && contadorLineas < 5) {
-                    contentStream.setFont(fontNegrita, 12);
-                    contentStream.setNonStrokingColor(52, 168, 83);
+                // Saltar líneas vacías
+                if (lineaLimpia.isEmpty()) {
+                    yPosition -= lineHeight / 2;
+                    continue;
+                }
+
+                // ✅ DETECCIÓN MEJORADA DE SUBTÍTULOS
+                if (esSubtitulo(lineaLimpia)) {
+                    // Espacio antes del subtítulo
+                    yPosition -= 10;
+
+                    // Subtítulo en negrita y color
+                    contentStream.setFont(fontSubtitulo, 12);
+                    contentStream.setNonStrokingColor(52, 168, 83); // Verde
+
                     contentStream.beginText();
                     contentStream.newLineAtOffset(margin, yPosition);
                     contentStream.showText(lineaLimpia);
                     contentStream.endText();
-                    contentStream.setFont(fontNormal, 9);
-                    contentStream.setNonStrokingColor(0, 0, 0);
+
                     yPosition -= lineHeight + 5;
-                    contadorLineas++;
+
+                    // Restaurar fuente normal
+                    contentStream.setFont(fontNormal, 10);
+                    contentStream.setNonStrokingColor(0, 0, 0);
                     continue;
                 }
 
-                // Detectar separadores
-                if (lineaLimpia.matches("[=─\\-]+")) {
-                    contentStream.setLineWidth(0.5f);
-                    contentStream.setStrokingColor(200, 200, 200);
+                // ✅ DETECCIÓN MEJORADA DE SEPARADORES
+                if (esSeparador(lineaLimpia)) {
+                    contentStream.setLineWidth(1f);
+                    contentStream.setStrokingColor(150, 150, 150);
                     contentStream.moveTo(margin, yPosition);
                     contentStream.lineTo(margin + width, yPosition);
                     contentStream.stroke();
@@ -172,116 +175,30 @@ public class FormatoPDF implements IFormatoReporte {
                     continue;
                 }
 
-                // Detectar inicio de tabla (línea con muchas comas)
-                if (lineaLimpia.contains(",") && lineaLimpia.split(",").length >= 4 && !enTabla) {
-                    enTabla = true;
+                // ✅ TEXTO NORMAL
+                contentStream.beginText();
+                contentStream.newLineAtOffset(margin, yPosition);
 
-                    // Encabezado de tabla
-                    contentStream.setFont(fontNegrita, 8);
-                    contentStream.setNonStrokingColor(52, 168, 83);
-                    contentStream.addRect(margin, yPosition - 10, width, 12);
-                    contentStream.fill();
-
-                    contentStream.setNonStrokingColor(255, 255, 255);
-                    contentStream.beginText();
-                    contentStream.newLineAtOffset(margin + 5, yPosition - 8);
-
-                    // Simplificar encabezado
-                    String encabezado = "ID | Fecha | Tipo | Estado | Mascota | Dueno | Veterinario";
-                    contentStream.showText(encabezado);
-                    contentStream.endText();
-
-                    contentStream.setFont(fontNormal, 8);
-                    contentStream.setNonStrokingColor(0, 0, 0);
-                    yPosition -= lineHeight + 5;
-                    continue;
-                }
-
-                // Procesar filas de tabla
-                if (enTabla && lineaLimpia.contains(",")) {
-                    String[] valores = lineaLimpia.split(",");
-
-                    // Limpiar comillas
-                    for (int i = 0; i < valores.length; i++) {
-                        valores[i] = valores[i].replace("\"", "").trim();
-                    }
-
-                    // Mostrar solo campos principales (compacto)
-                    if (valores.length >= 7) {
-                        StringBuilder filaCompacta = new StringBuilder();
-
-                        // ID (max 5 chars)
-                        filaCompacta.append(truncar(valores[0], 5)).append(" | ");
-                        // Fecha (max 10)
-                        filaCompacta.append(truncar(valores[1], 10)).append(" | ");
-                        // Tipo (max 8)
-                        filaCompacta.append(truncar(valores[2], 8)).append(" | ");
-                        // Estado (max 10)
-                        filaCompacta.append(truncar(valores[3], 10)).append(" | ");
-                        // Mascota (max 10)
-                        filaCompacta.append(truncar(valores[4], 10)).append(" | ");
-                        // Dueño (max 15)
-                        if (valores.length > 6) {
-                            filaCompacta.append(truncar(valores[6], 15)).append(" | ");
-                        }
-                        // Veterinario (max 15)
-                        if (valores.length > 8) {
-                            filaCompacta.append(truncar(valores[8], 15));
-                        }
-
-                        contentStream.beginText();
-                        contentStream.newLineAtOffset(margin + 5, yPosition);
-                        contentStream.showText(filaCompacta.toString());
-                        contentStream.endText();
-                        yPosition -= lineHeight;
-                    }
-                    continue;
-                }
-
-                // Terminar tabla si ya no hay comas
-                if (enTabla && !lineaLimpia.contains(",")) {
-                    enTabla = false;
-                    yPosition -= lineHeight;
-                }
-
-                // Procesar líneas con formato "Campo: Valor"
+                // Detectar si es un campo (texto antes de ":")
                 if (lineaLimpia.contains(":") && !enTabla) {
                     String[] partes = lineaLimpia.split(":", 2);
                     if (partes.length == 2) {
-                        String clave = partes[0].trim();
-                        String valor = partes[1].trim();
+                        // Parte antes de ":" en negrita
+                        contentStream.setFont(fontNegrita, 10);
+                        contentStream.showText(partes[0].trim() + ": ");
 
-                        // Saltar líneas con N/A
-                        if (valor.equals("N/A") || valor.isEmpty()) {
-                            continue;
-                        }
-
-                        // Campo en negrita
-                        contentStream.setFont(fontNegrita, 9);
-                        contentStream.beginText();
-                        contentStream.newLineAtOffset(margin, yPosition);
-                        contentStream.showText(truncar(clave, 30) + ":");
-                        contentStream.endText();
-
-                        // Valor en normal
-                        contentStream.setFont(fontNormal, 9);
-                        contentStream.beginText();
-                        contentStream.newLineAtOffset(margin + 150, yPosition);
-                        contentStream.showText(truncar(valor, 50));
-                        contentStream.endText();
-
-                        yPosition -= lineHeight;
+                        // Parte después de ":" en normal
+                        contentStream.setFont(fontNormal, 10);
+                        contentStream.showText(partes[1].trim());
+                    } else {
+                        contentStream.showText(lineaLimpia);
                     }
-                } else if (!enTabla) {
-                    // Texto normal
-                    contentStream.beginText();
-                    contentStream.newLineAtOffset(margin, yPosition);
-                    contentStream.showText(truncar(lineaLimpia, 80));
-                    contentStream.endText();
-                    yPosition -= lineHeight;
+                } else {
+                    contentStream.showText(lineaLimpia);
                 }
 
-                contadorLineas++;
+                contentStream.endText();
+                yPosition -= lineHeight;
             }
 
             contentStream.close();
@@ -294,7 +211,7 @@ public class FormatoPDF implements IFormatoReporte {
                 cs.setFont(fontNormal, 8);
                 cs.setNonStrokingColor(150, 150, 150);
 
-                String piePagina = "Veterinaria PetSalud - Sistema de Gestion Veterinaria";
+                String piePagina = "Veterinaria PetSalud - Sistema de Gestión Veterinaria";
                 float pieWidth = fontNormal.getStringWidth(piePagina) / 1000 * 8;
                 cs.beginText();
                 cs.newLineAtOffset(margin + (width - pieWidth) / 2, margin - 20);
@@ -304,12 +221,71 @@ public class FormatoPDF implements IFormatoReporte {
                 cs.close();
             }
 
-            // Guardar el documento
             document.save(archivo);
 
         } finally {
             document.close();
         }
+    }
+
+    private boolean esSubtitulo(String linea) {
+        if (linea == null || linea.isEmpty()) {
+            return false;
+        }
+
+        // Patrones de subtítulos
+        String[] patronesSubtitulos = {
+            "INFORMACIÓN BÁSICA",
+            "INFORMACIÓN DEL ANÁLISIS",
+            "DESCRIPCIÓN DEL ANÁLISIS",
+            "VALORES OBTENIDOS",
+            "CONCLUSIONES TÉCNICAS",
+            "DIAGNÓSTICO VETERINARIO",
+            "TRATAMIENTO RECOMENDADO",
+            "INFORME VETERINARIO",
+            "INFORMACIÓN",
+            "DESCRIPCIÓN",
+            "VALORES",
+            "CONCLUSIONES",
+            "DIAGNÓSTICO",
+            "TRATAMIENTO"
+        };
+
+        String lineaUpper = linea.toUpperCase();
+
+        // Verificar patrones exactos
+        for (String patron : patronesSubtitulos) {
+            if (lineaUpper.contains(patron)) {
+                return true;
+            }
+        }
+
+        // Verificar si es una línea en mayúsculas (excluyendo separadores)
+        if (lineaUpper.equals(linea)
+                && linea.length() > 5
+                && linea.length() < 100
+                && !esSeparador(linea)
+                && !linea.contains(",")) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Detecta si una línea es un separador
+     */
+    private boolean esSeparador(String linea) {
+        if (linea == null || linea.isEmpty()) {
+            return false;
+        }
+
+        // Patrones de separadores
+        return linea.matches("[=─\\-]+")
+                || linea.matches("[\\*]+")
+                || linea.matches("[_]+")
+                || linea.equals("==========================================")
+                || linea.equals("------------------------------------------");
     }
 
 // Método auxiliar para truncar texto

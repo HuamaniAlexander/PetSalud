@@ -121,6 +121,7 @@ public class MainFrame extends JFrame {
                 agregarItemMenu("\uD83D\uDD2C Resultados", e -> mostrarPanel(new PanelResultado()), false);
                 break;
             case TECNICO:
+                
                 agregarItemMenu("\uD83D\uDD2C Laboratorio", e -> mostrarPanel(new PanelOrdenLaboratorio()), false);
                 agregarItemMenu("\uD83D\uDCCB Mis Analisis", e -> mostrarPanel(new PanelResultado()), false);
                 break;
