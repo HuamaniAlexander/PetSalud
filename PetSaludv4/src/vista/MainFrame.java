@@ -111,6 +111,8 @@ public class MainFrame extends JFrame {
                 agregarItemMenu("\uD83D\uDC68\u200D\u2695 Personal", e -> mostrarPanel(new PanelPersonal()), false);
                 agregarItemMenu("\uD83D\uDC15 Duenos y Mascotas", e -> mostrarPanel(new PanelDuenoMascota()), false);
                 agregarItemMenu("\uD83D\uDCCB Ordenes", e -> mostrarPanel(new PanelOrdenLaboratorio()), false);
+                agregarItemMenu("\uD83D\uDD2C Resultados", e -> mostrarPanel(new PanelResultado()), false);
+                agregarItemMenu("\uD83D\uDCB0 Facturación", e -> mostrarPanel(new PanelFacturacion()), false);
                 agregarItemMenu("\uD83D\uDCC8 Reportes", e -> mostrarPanel(new PanelReportes()), false);
                 break;
             case VETERINARIO:

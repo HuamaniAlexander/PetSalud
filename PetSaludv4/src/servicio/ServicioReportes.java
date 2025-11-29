@@ -103,20 +103,32 @@ public String generarReporteOrdenes(Date fechaInicio, Date fechaFin, String esta
     }
 
     public String generarReporteLaboratorio(Date fechaInicio, Date fechaFin, String formato) {
-        try {
+            try {
             List<Map<String, Object>> datos = reportesDAO.reporteLaboratorio(fechaInicio, fechaFin);
 
-            if (datos.isEmpty()) {
+            if (datos == null || datos.isEmpty()) {
                 return "NO_DATA";
             }
 
+            System.out.println("✅ Reporte Laboratorio - Datos recibidos: " + datos.size() + " registros");
+
+            String contenido = construirContenidoLaboratorio(datos, fechaInicio, fechaFin);
+
+            System.out.println("✅ CONTENIDO LABORATORIO: " + contenido.length() + " caracteres");
+            System.out.println("📄 PREVIEW LAB: " + contenido.substring(0, Math.min(200, contenido.length())));
+
+            if ("PDF".equalsIgnoreCase(formato)) {
+                return contenido;  // ← IMPORTANTE: igual que en reporteOrdenes
+            }
+
+            // Para otros formatos, usar el generador Bridge
             IFormatoReporte formatoReporte = obtenerFormato(formato);
             ReporteLaboratorio generador = new ReporteLaboratorio(formatoReporte);
 
-            String contenido = construirContenidoLaboratorio(datos, fechaInicio, fechaFin);
             generador.setContenido(contenido);
             generador.setPeriodo(sdf.format(fechaInicio) + " - " + sdf.format(fechaFin));
 
+            // Estadísticas adicionales
             List<String> analisisList = new ArrayList<>();
             for (Map<String, Object> tipo : datos) {
                 analisisList.add(getValueSafe(tipo, "tipo_examen") + ": "
@@ -127,7 +139,7 @@ public String generarReporteOrdenes(Date fechaInicio, Date fechaFin, String esta
             return generador.generar();
 
         } catch (SQLException e) {
-            System.err.println("Error: " + e.getMessage());
+            System.err.println("❌ Error en reporteLaboratorio: " + e.getMessage());
             e.printStackTrace();
             return "ERROR: " + e.getMessage();
         }
@@ -260,49 +272,81 @@ private String construirContenidoOrdenes(List<Map<String, Object>> datos, Date f
     }
 
     private String construirContenidoLaboratorio(List<Map<String, Object>> datos, Date fechaInicio, Date fechaFin) {
-        StringBuilder contenido = new StringBuilder();
+    StringBuilder contenido = new StringBuilder();
 
-        contenido.append("REPORTE DE LABORATORIO\n");
-        contenido.append("Período: ").append(sdf.format(fechaInicio)).append(" - ").append(sdf.format(fechaFin)).append("\n\n");
+    contenido.append("REPORTE DE LABORATORIO\n");
+    contenido.append("Periodo: ").append(sdf.format(fechaInicio)).append(" - ").append(sdf.format(fechaFin)).append("\n");
+    contenido.append("Total de tipos de examen: ").append(datos.size()).append("\n\n");
+    contenido.append("ANALISIS POR TIPO DE EXAMEN:\n");
+    contenido.append("═══════════════════════════════════════════════════════════════════\n\n");
 
-        int totalAnalisis = 0;
-        int totalCompletados = 0;
-        int totalValidados = 0;
+    int totalAnalisis = 0;
+    int totalCompletados = 0;
+    int totalValidados = 0;
+    int totalPendientes = 0;
+    int totalEnProceso = 0;
 
-        contenido.append("ANÁLISIS POR TIPO DE EXAMEN:\n");
-        contenido.append("═══════════════════════════════════════════════════════════════════\n\n");
+    for (Map<String, Object> tipo : datos) {
+        int cantidad = getInt(tipo, "cantidad_analisis");
+        int completados = getInt(tipo, "completados");
+        int validados = getInt(tipo, "validados");
+        int pendientes = getInt(tipo, "pendientes");
+        int enProceso = getInt(tipo, "en_proceso");
+        
+        totalAnalisis += cantidad;
+        totalCompletados += completados;
+        totalValidados += validados;
+        totalPendientes += pendientes;
+        totalEnProceso += enProceso;
 
-        for (Map<String, Object> tipo : datos) {
-            int cantidad = getInt(tipo, "cantidad_analisis");
-            totalAnalisis += cantidad;
-            totalCompletados += getInt(tipo, "completados");
-            totalValidados += getInt(tipo, "validados");
+        contenido.append("Tipo de Examen: ").append(getValueSafe(tipo, "tipo_examen")).append("\n");
+        contenido.append(String.format("  Cantidad: %d\n", cantidad));
+        contenido.append(String.format("  Completados: %d\n", completados));
+        contenido.append(String.format("  Validados: %d\n", validados));
+        contenido.append(String.format("  Pendientes: %d\n", pendientes));
+        contenido.append(String.format("  En Proceso: %d\n", enProceso));
 
-            contenido.append("Tipo de Examen: ").append(getValueSafe(tipo, "tipo_examen")).append("\n");
-            contenido.append(String.format("  Cantidad: %d\n", cantidad));
-            contenido.append(String.format("  Completados: %d\n", getInt(tipo, "completados")));
-            contenido.append(String.format("  Validados: %d\n", getInt(tipo, "validados")));
-            contenido.append(String.format("  Pendientes: %d\n", getInt(tipo, "pendientes")));
-            contenido.append(String.format("  En Proceso: %d\n", getInt(tipo, "en_proceso")));
-
-            Object tiempoPromedio = tipo.get("horas_promedio");
-            if (tiempoPromedio != null) {
-                contenido.append(String.format("  Tiempo Promedio: %.2f horas\n", getDouble(tipo, "horas_promedio")));
-            }
-
-            contenido.append(String.format("  Rango: %s - %s\n",
-                    getValueSafe(tipo, "primera_fecha"),
-                    getValueSafe(tipo, "ultima_fecha")));
-            contenido.append("\n");
+        double tiempoPromedio = getDouble(tipo, "horas_promedio");
+        if (tiempoPromedio > 0) {
+            contenido.append(String.format("  Tiempo Promedio: %.2f horas\n", tiempoPromedio));
+        } else {
+            contenido.append("  Tiempo Promedio: N/A\n");
         }
 
-        contenido.append("═══════════════════════════════════════════════════════════════════\n");
-        contenido.append(String.format("TOTAL ANÁLISIS: %d\n", totalAnalisis));
-        contenido.append(String.format("TOTAL COMPLETADOS: %d\n", totalCompletados));
-        contenido.append(String.format("TOTAL VALIDADOS: %d\n", totalValidados));
-
-        return contenido.toString();
+        // ✅ USAR EL MÉTODO MEJORADO
+        String primeraFecha = getValueSafe(tipo, "primera_fecha");
+        String ultimaFecha = getValueSafe(tipo, "ultima_fecha");
+        
+        if (!"N/A".equals(primeraFecha) && !"N/A".equals(ultimaFecha) && 
+            !primeraFecha.trim().isEmpty() && !ultimaFecha.trim().isEmpty()) {
+            contenido.append(String.format("  Rango: %s - %s\n", primeraFecha, ultimaFecha));
+        } else {
+            contenido.append("  Rango: N/A\n");
+        }
+        
+        contenido.append("\n───────────────────────────────────────────────────────────────────\n\n");
     }
+
+    // Resumen general (igual que antes)
+    contenido.append("═══════════════════════════════════════════════════════════════════\n");
+    contenido.append("RESUMEN GENERAL:\n");
+    contenido.append(String.format("Total Analisis Registrados: %d\n", totalAnalisis));
+    contenido.append(String.format("Total Completados: %d\n", totalCompletados));
+    contenido.append(String.format("Total Validados: %d\n", totalValidados));
+    contenido.append(String.format("Total Pendientes: %d\n", totalPendientes));
+    contenido.append(String.format("Total En Proceso: %d\n", totalEnProceso));
+    
+    if (totalAnalisis > 0) {
+        double porcentajeCompletados = (totalCompletados * 100.0) / totalAnalisis;
+        double porcentajeValidados = (totalValidados * 100.0) / totalAnalisis;
+        contenido.append(String.format("\nTasa de Completitud: %.1f%%\n", porcentajeCompletados));
+        contenido.append(String.format("Tasa de Validacion: %.1f%%\n", porcentajeValidados));
+    }
+    
+    contenido.append("═══════════════════════════════════════════════════════════════════\n");
+
+    return contenido.toString();
+}
 
     private String construirContenidoVeterinarios(List<Map<String, Object>> datos, Date fechaInicio, Date fechaFin) {
         StringBuilder contenido = new StringBuilder();
@@ -349,38 +393,45 @@ private String construirContenidoOrdenes(List<Map<String, Object>> datos, Date f
         }
     }
 
-    private Object getValueSafe(Map<String, Object> map, String key) {
-        // Intentar con el key original
+    private String getValueSafe(Map<String, Object> map, String key) {
+    if (map == null) return "N/A";
+    
+    // Buscar exactamente
+    if (map.containsKey(key)) {
         Object value = map.get(key);
-        if (value != null && !value.toString().isEmpty()) {
-            return value;
+        return (value != null) ? value.toString() : "N/A";
+    }
+    
+    // Buscar case insensitive
+    for (String actualKey : map.keySet()) {
+        if (actualKey.equalsIgnoreCase(key)) {
+            Object value = map.get(actualKey);
+            return (value != null) ? value.toString() : "N/A";
         }
+    }
+    
+    System.err.println("⚠ Key no encontrada: '" + key + "'. Keys disponibles: " + map.keySet());
+    return "N/A";
+}
 
-        // Intentar con variaciones comunes del key
-        String[] variaciones = {
-            key,
-            key.toLowerCase(),
-            key.toUpperCase(),
-            key.replace("_", " "),
-            key.replace(" ", "_"),
-            key.replace("_", "")
-        };
-
-        for (String variacion : variaciones) {
-            value = map.get(variacion);
-            if (value != null && !value.toString().isEmpty()) {
-                return value;
-            }
-        }
-
-        // Debug: mostrar keys disponibles si no encuentra
-        if (value == null) {
-            System.err.println("⚠ Key no encontrada: " + key);
-            System.err.println("Keys disponibles: " + map.keySet());
-        }
-
+// Método específico para fechas
+private String getDateSafe(Map<String, Object> map, String key) {
+    Object value = getValueSafe(map, key);
+    if (value == null || "N/A".equals(value)) {
         return "N/A";
     }
+    
+    try {
+        // Si es una fecha, formatearla
+        if (value instanceof Date) {
+            return sdf.format((Date) value);
+        }
+        // Si ya es string, retornarlo tal cual
+        return value.toString();
+    } catch (Exception e) {
+        return "N/A";
+    }
+}
 
     private double getDouble(Map<String, Object> map, String key) {
         Object value = map.get(key);

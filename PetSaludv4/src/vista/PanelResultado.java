@@ -213,7 +213,7 @@ public class PanelResultado extends JPanel {
                     int idVeterinario = Integer.parseInt(txtIdVet.getText().trim());
                     
                     boolean resultado = controlador.validarResultado(idResultado, idVeterinario);
-                    if (resultado) {
+                    if (!resultado) {
                         mostrarMensajeExito("Resultado validado exitosamente");
                         btnActualizar.doClick();
                         txtIdVet.setText("");
