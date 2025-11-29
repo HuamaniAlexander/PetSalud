@@ -295,7 +295,7 @@ public class PanelDuenoMascota extends JPanel {
         
         fila++;
         gbc.gridx = 0; gbc.gridy = fila; gbc.gridwidth = 1;
-        panelFormulario.add(crearEtiqueta("Edad (anos)"), gbc);
+        panelFormulario.add(crearEtiqueta("Edad (años)"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
         panelFormulario.add(txtEdad, gbc);
         

@@ -371,85 +371,44 @@ public class PanelUsuarios extends JPanel {
         int filaModelo = tabla.convertRowIndexToModel(filaSeleccionada);
         int idUsuario = (int) modeloTabla.getValueAt(filaModelo, 0);
         String nombreUsuario = (String) modeloTabla.getValueAt(filaModelo, 1);
-        String rolActual = (String) modeloTabla.getValueAt(filaModelo, 2);
 
-        // PASO 3: Mostrar diálogo con opciones
-        String[] opciones = {"Eliminar Permanentemente", "Solo Desactivar", "Cancelar"};
-        int seleccion = JOptionPane.showOptionDialog(this,
-                "Seleccione la acción para el usuario '" + nombreUsuario + "':\n\n"
-                + "• ELIMINAR: Borra el registro completamente de la base de datos\n"
-                + "• DESACTIVAR: Mantiene el registro pero impide el acceso\n",
-                "Confirmar Acción",
-                JOptionPane.YES_NO_CANCEL_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                opciones,
-                opciones[1]);
         try {
-            if (seleccion == 0) { // Opción: Eliminar permanentemente
+            // PASO 1: Verificar dependencias primero
+            String dependencias = usuarioDAO.verificarDependencias(idUsuario);
+
+            String mensaje;
+            if (dependencias != null) {
+                mensaje = "⚠️ ADVERTENCIA: No se puede eliminar al usuario '" + nombreUsuario + "'\n\n"
+                        + dependencias + "\n"
+                        + "Debe eliminar primero estos registros asociados antes de poder eliminar el usuario.\n\n"
+                        + "¿Desea continuar de todas formas? (La eliminación fallará)";
+            } else {
+                mensaje = "¿Está seguro de eliminar permanentemente al usuario '" + nombreUsuario + "'?\n\n"
+                        + "⚠️ Esta acción NO se puede deshacer.\n"
+                        + "El usuario será eliminado de la base de datos.\n\n"
+                        + "¿Desea continuar?";
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    mensaje,
+                    "Confirmar Eliminación Permanente",
+                    JOptionPane.YES_NO_OPTION,
+                    dependencias != null ? JOptionPane.WARNING_MESSAGE : JOptionPane.QUESTION_MESSAGE);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                // PASO 2: Intentar eliminar
                 boolean eliminado = usuarioDAO.eliminar(idUsuario);
 
                 if (eliminado) {
-                    mostrarMensajeExito("Usuario eliminado permanentemente");
+                    mostrarMensajeExito("✓ Usuario eliminado permanentemente de la base de datos");
                     cargarUsuarios();
                 } else {
-                    // Si no se puede eliminar físicamente, ofrecer desactivar
-                    int confirmar = JOptionPane.showConfirmDialog(this,
-                            "No se puede eliminar el usuario debido a restricciones de la base de datos.\n"
-                            + "¿Desea desactivarlo en su lugar?",
-                            "Restricción de Eliminación",
-                            JOptionPane.YES_NO_OPTION,
-                            JOptionPane.WARNING_MESSAGE);
-
-                    if (confirmar == JOptionPane.YES_OPTION) {
-                        // Desactivar usuario creando objeto Usuario temporal
-                        Usuario usuarioTemporal = new Usuario();
-                        usuarioTemporal.setIdUsuario(idUsuario);
-                        usuarioTemporal.setNombreUsuario(nombreUsuario);
-                        usuarioTemporal.setContrasena("***DESACTIVADO***");
-
-                        RolUsuario rol;
-                        try {
-                            rol = RolUsuario.valueOf(rolActual.toUpperCase().replace(" ", "_"));
-                        } catch (IllegalArgumentException e) {
-                            rol = RolUsuario.RECEPCIONISTA; // Rol por defecto si hay error
-                        }
-
-                        usuarioTemporal.setRol(rol);
-                        usuarioTemporal.setActivo(false);  // ✅ DESACTIVAR
-
-                        usuarioDAO.actualizar(usuarioTemporal);
-                        mostrarMensajeExito("Usuario desactivado correctamente");
-                        cargarUsuarios();
-                    }
+                    mostrarMensajeError("No se pudo eliminar el usuario. Intente nuevamente.");
                 }
-
-            } else if (seleccion == 1) { // Opción: Solo desactivar
-                // Crear objeto Usuario temporal para desactivar
-                Usuario usuarioTemporal = new Usuario();
-                usuarioTemporal.setIdUsuario(idUsuario);
-                usuarioTemporal.setNombreUsuario(nombreUsuario);
-                usuarioTemporal.setContrasena("***DESACTIVADO***");
-
-                // Convertir el rol de String a RolUsuario
-                RolUsuario rol;
-                try {
-                    rol = RolUsuario.valueOf(rolActual.toUpperCase().replace(" ", "_"));
-                } catch (IllegalArgumentException e) {
-                    rol = RolUsuario.RECEPCIONISTA;
-                }
-
-                usuarioTemporal.setRol(rol);
-                usuarioTemporal.setActivo(false);  // ✅ DESACTIVAR
-
-                usuarioDAO.actualizar(usuarioTemporal);
-                mostrarMensajeExito("Usuario desactivado correctamente");
-                cargarUsuarios();
             }
-            // Si seleccion == 2 (Cancelar) o cerró el diálogo, no hacer nada
-
         } catch (SQLException ex) {
-            mostrarMensajeError("Error al procesar la operación:\n" + ex.getMessage());
+            String mensajeError = ex.getMessage();
+            mostrarMensajeError("❌ Error al eliminar usuario:\n\n" + mensajeError);
         }
     }
 

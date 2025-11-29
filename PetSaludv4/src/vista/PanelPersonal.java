@@ -712,37 +712,42 @@ public class PanelPersonal extends JPanel {
         int idVeterinario = (int) modeloVeterinarios.getValueAt(filaModelo, 0);
         String nombre = modeloVeterinarios.getValueAt(filaModelo, 1) + " " + modeloVeterinarios.getValueAt(filaModelo, 2);
 
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "¿Está seguro de eliminar al veterinario '" + nombre + "'?\n\n"
-                + "ADVERTENCIA: Esta acción no se puede deshacer.\n"
-                + "Si el veterinario tiene órdenes asociadas, la eliminación fallará.",
-                "Confirmar Eliminación",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE);
+        try {
+            // Verificar dependencias primero
+            String dependencias = veterinarioDAO.verificarDependencias(idVeterinario);
 
-        if (confirm == JOptionPane.YES_OPTION) {
-            try {
+            String mensaje;
+            if (dependencias != null) {
+                mensaje = "⚠️ ADVERTENCIA: No se puede eliminar al veterinario '" + nombre + "'\n\n"
+                        + dependencias + "\n"
+                        + "Debe eliminar primero estos registros asociados.\n\n"
+                        + "¿Desea continuar de todas formas? (La eliminación fallará)";
+            } else {
+                mensaje = "¿Está seguro de eliminar permanentemente al veterinario '" + nombre + "'?\n\n"
+                        + "⚠️ Esta acción NO se puede deshacer.\n"
+                        + "El veterinario será eliminado de la base de datos.\n\n"
+                        + "¿Desea continuar?";
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    mensaje,
+                    "Confirmar Eliminación Permanente",
+                    JOptionPane.YES_NO_OPTION,
+                    dependencias != null ? JOptionPane.WARNING_MESSAGE : JOptionPane.QUESTION_MESSAGE);
+
+            if (confirm == JOptionPane.YES_OPTION) {
                 boolean eliminado = veterinarioDAO.eliminar(idVeterinario);
 
                 if (eliminado) {
-                    mostrarMensajeExito("Veterinario eliminado correctamente");
+                    mostrarMensajeExito("✓ Veterinario eliminado permanentemente de la base de datos");
                     cargarVeterinarios();
                 } else {
-                    mostrarMensajeError(
-                            "No se puede eliminar el veterinario.\n\n"
-                            + "Posibles razones:\n"
-                            + "• Tiene órdenes veterinarias asociadas\n"
-                            + "• Tiene resultados validados\n"
-                            + "• Restricciones de integridad referencial\n\n"
-                            + "Considere desactivar al veterinario en lugar de eliminarlo."
-                    );
+                    mostrarMensajeError("No se pudo eliminar el veterinario. Intente nuevamente.");
                 }
-            } catch (SQLException ex) {
-                mostrarMensajeError(
-                        "Error al eliminar veterinario:\n" + ex.getMessage() + "\n\n"
-                        + "El veterinario probablemente tiene registros asociados en el sistema."
-                );
             }
+        } catch (SQLException ex) {
+            String mensajeError = ex.getMessage();
+            mostrarMensajeError("❌ Error al eliminar veterinario:\n\n" + mensajeError);
         }
     }
 
@@ -757,36 +762,42 @@ public class PanelPersonal extends JPanel {
         int idTecnico = (int) modeloTecnicos.getValueAt(filaModelo, 0);
         String nombre = modeloTecnicos.getValueAt(filaModelo, 1) + " " + modeloTecnicos.getValueAt(filaModelo, 2);
 
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "¿Está seguro de eliminar al técnico '" + nombre + "'?\n\n"
-                + "ADVERTENCIA: Esta acción no se puede deshacer.\n"
-                + "Si el técnico tiene tomas de muestra asociadas, la eliminación fallará.",
-                "Confirmar Eliminación",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE);
+        try {
+            // Verificar dependencias primero
+            String dependencias = tecnicoDAO.verificarDependencias(idTecnico);
 
-        if (confirm == JOptionPane.YES_OPTION) {
-            try {
+            String mensaje;
+            if (dependencias != null) {
+                mensaje = "⚠️ ADVERTENCIA: No se puede eliminar al técnico '" + nombre + "'\n\n"
+                        + dependencias + "\n"
+                        + "Debe eliminar primero estos registros asociados.\n\n"
+                        + "¿Desea continuar de todas formas? (La eliminación fallará)";
+            } else {
+                mensaje = "¿Está seguro de eliminar permanentemente al técnico '" + nombre + "'?\n\n"
+                        + "⚠️ Esta acción NO se puede deshacer.\n"
+                        + "El técnico será eliminado de la base de datos.\n\n"
+                        + "¿Desea continuar?";
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    mensaje,
+                    "Confirmar Eliminación Permanente",
+                    JOptionPane.YES_NO_OPTION,
+                    dependencias != null ? JOptionPane.WARNING_MESSAGE : JOptionPane.QUESTION_MESSAGE);
+
+            if (confirm == JOptionPane.YES_OPTION) {
                 boolean eliminado = tecnicoDAO.eliminar(idTecnico);
 
                 if (eliminado) {
-                    mostrarMensajeExito("Técnico eliminado correctamente");
+                    mostrarMensajeExito("✓ Técnico eliminado permanentemente de la base de datos");
                     cargarTecnicos();
                 } else {
-                    mostrarMensajeError(
-                            "No se puede eliminar el técnico.\n\n"
-                            + "Posibles razones:\n"
-                            + "• Tiene tomas de muestra asociadas\n"
-                            + "• Restricciones de integridad referencial\n\n"
-                            + "Considere desactivar al técnico en lugar de eliminarlo."
-                    );
+                    mostrarMensajeError("No se pudo eliminar el técnico. Intente nuevamente.");
                 }
-            } catch (SQLException ex) {
-                mostrarMensajeError(
-                        "Error al eliminar técnico:\n" + ex.getMessage() + "\n\n"
-                        + "El técnico probablemente tiene registros asociados en el sistema."
-                );
             }
+        } catch (SQLException ex) {
+            String mensajeError = ex.getMessage();
+            mostrarMensajeError("❌ Error al eliminar técnico:\n\n" + mensajeError);
         }
     }
 
